@@ -1,5 +1,5 @@
 from .base_repository import BaseRepository
-from insurance.model.Payment import Payment
+from insurance.model.payment import Payment
 
 class PaymentRepository(BaseRepository):
     def __init__(self):

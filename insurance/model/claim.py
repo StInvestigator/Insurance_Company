@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 
-from insurance.model.InsurancePolicy import InsurancePolicy
+from insurance.model.insurance_policy import InsurancePolicy
 
 
 class Claim(models.Model):

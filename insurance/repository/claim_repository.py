@@ -1,5 +1,5 @@
 from .base_repository import BaseRepository
-from insurance.model.Claim import Claim
+from insurance.model.claim import Claim
 
 class ClaimRepository(BaseRepository):
     def __init__(self):

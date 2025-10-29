@@ -1,8 +1,8 @@
 from rest_framework.routers import DefaultRouter
-from .view.ClaimView import ClaimView
-from .view.CustomerView import CustomerView
-from .view.InsurancePolicyView import InsurancePolicyView
-from .view.PaymentView import PaymentView
+from .view.claim_view import ClaimView
+from .view.customer_view import CustomerView
+from .view.insurance_policy_view import InsurancePolicyView
+from .view.payment_view import PaymentView
 
 router = DefaultRouter()
 router.register('customers', CustomerView, basename="customer")

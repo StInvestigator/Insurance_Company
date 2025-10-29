@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from insurance.view.RegisterView import RegisterView
+from insurance.view.register_view import RegisterView
 
 schema_view = get_schema_view(
     openapi.Info(

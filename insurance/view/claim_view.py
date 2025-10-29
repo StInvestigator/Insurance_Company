@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from insurance.model.Claim import Claim
+from insurance.model.claim import Claim
 from ..repository.claim_repository import ClaimRepository
 from ..serializers import (
     ClaimSerializer

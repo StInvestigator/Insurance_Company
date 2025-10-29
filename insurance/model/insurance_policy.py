@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 
-from insurance.model.Customer import Customer
+from insurance.model.customer import Customer
 
 
 class InsurancePolicy(models.Model):

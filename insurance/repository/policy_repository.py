@@ -1,7 +1,7 @@
 from django.db import models
 
 from .base_repository import BaseRepository
-from insurance.model.InsurancePolicy import InsurancePolicy
+from insurance.model.insurance_policy import InsurancePolicy
 from django.utils import timezone
 
 class PolicyRepository(BaseRepository):

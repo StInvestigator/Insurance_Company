@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 
-from insurance.model.InsurancePolicy import InsurancePolicy
+from insurance.model.insurance_policy import InsurancePolicy
 from ..serializers import (
     InsurancePolicySerializer
 )

@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from insurance.model.Customer import Customer
+from insurance.model.customer import Customer
 from ..serializers import (
     CustomerSerializer
 )
