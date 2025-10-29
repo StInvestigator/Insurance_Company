@@ -1,15 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb00232a-fb6a-4bfd-a325-c49d299de701" name="Changes" comment="" />
+    <list default="true" id="eb00232a-fb6a-4bfd-a325-c49d299de701" name="Changes" comment="init">
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/data_source_mapping.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/api_urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/repository/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/repository/base_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/repository/claim_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/repository/customer_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/repository/payment_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/repository/policy_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/serializers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/insurance/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Insurance_company/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/insurance/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Insurance_company/asgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/insurance/asgi.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Insurance_company/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/insurance/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Insurance_company/urls.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Insurance_company/wsgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/insurance/wsgi.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/manage.py" beforeDir="false" afterPath="$PROJECT_DIR$/manage.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "StInvestigator"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/StInvestigator/Insurance_Company.git",
+    "accountId": "45ae294c-61d3-4dba-b9dd-3abc23d1cf48"
+  }
+}]]></component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 0
 }]]></component>
@@ -20,11 +65,62 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Docker.docker-compose.yml.postgres: Compose Deployment.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "D:/Lviv_Politech/Python/lab3",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
+    ]
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Lviv_Politech\Python\lab3" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Lviv_Politech\Python\lab3\insurance" />
+      <recent name="D:\Lviv_Politech\Python\lab3" />
+      <recent name="D:\Lviv_Politech\Python\lab3\insurance\src" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
+      <deployment type="docker-compose.yml" />
+      <method v="2" />
+    </configuration>
+    <configuration name="docker-compose.yml.postgres: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="postgres" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Docker.docker-compose.yml.postgres: Compose Deployment" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -40,11 +136,24 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1761734440733</updated>
-      <workItem from="1761734441820" duration="2000" />
+      <workItem from="1761734441820" duration="5639000" />
     </task>
+    <task id="LOCAL-00001" summary="init">
+      <option name="closed" value="true" />
+      <created>1761734599409</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1761734599409</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="init" />
+    <option name="LAST_COMMIT_MESSAGE" value="init" />
   </component>
 </project>
