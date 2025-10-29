@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from insurance.models import Customer, InsurancePolicy, Claim, Payment
+from insurance.model.Customer import Customer
+from insurance.model.InsurancePolicy import InsurancePolicy
+from insurance.model.Payment import Payment
+from insurance.model.Claim import Claim
 
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password

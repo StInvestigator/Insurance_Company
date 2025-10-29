@@ -1,5 +1,5 @@
 from .base_repository import BaseRepository
-from insurance.models import Customer
+from insurance.model.Customer import Customer
 
 class CustomerRepository(BaseRepository):
     def __init__(self):

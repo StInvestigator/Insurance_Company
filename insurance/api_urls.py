@@ -1,13 +1,13 @@
 from rest_framework.routers import DefaultRouter
-from .views.ClaimViewSet import ClaimViewSet
-from .views.CustomerViewSet import CustomerViewSet
-from .views.InsurancePolicyViewSet import InsurancePolicyViewSet
-from .views.PaymentViewSet import PaymentViewSet
+from .view.ClaimView import ClaimView
+from .view.CustomerView import CustomerView
+from .view.InsurancePolicyView import InsurancePolicyView
+from .view.PaymentView import PaymentView
 
 router = DefaultRouter()
-router.register(r'customers', CustomerViewSet, basename="customer")
-router.register(r'policies', InsurancePolicyViewSet,  basename="policies")
-router.register(r'claims', ClaimViewSet,  basename="claims")
-router.register(r'payments', PaymentViewSet,  basename="payments")
+router.register('customers', CustomerView, basename="customer")
+router.register('policies', InsurancePolicyView,  basename="policy")
+router.register('claims', ClaimView,  basename="claim")
+router.register('payments', PaymentView,  basename="payment")
 
 urlpatterns = router.urls

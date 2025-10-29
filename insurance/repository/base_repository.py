@@ -18,6 +18,7 @@ class BaseRepository(Generic[T]):
 
     def update(self, obj_id: int, **kwargs):
         obj = self.get_by_id(obj_id)
+        print(kwargs)
         if not obj:
             return None
         for key, value in kwargs.items():
