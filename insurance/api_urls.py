@@ -5,9 +5,9 @@ from .view.insurance_policy_view import InsurancePolicyView
 from .view.payment_view import PaymentView
 
 router = DefaultRouter()
-router.register('customers', CustomerView, basename="customer")
-router.register('policies', InsurancePolicyView,  basename="policy")
-router.register('claims', ClaimView,  basename="claim")
-router.register('payments', PaymentView,  basename="payment")
+router.register(r'customers', CustomerView, basename="customer")
+router.register(r'policies', InsurancePolicyView,  basename="policy")
+router.register(r'claims', ClaimView,  basename="claim")
+router.register(r'payments', PaymentView,  basename="payment")
 
 urlpatterns = router.urls
