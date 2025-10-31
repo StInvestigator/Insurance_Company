@@ -3,8 +3,12 @@ from insurance.model.customer import Customer
 from ..serializers import (
     CustomerSerializer
 )
+from rest_framework.decorators import action
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.response import Response
 from ..repository.customer_repository import CustomerRepository
 from rest_framework.response import Response
+from drf_yasg import openapi
 from rest_framework import status
 
 
@@ -50,3 +54,25 @@ class CustomerView(viewsets.ModelViewSet):
         if deleted:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"error": "Policy not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    @swagger_auto_schema(
+        method='get',
+        manual_parameters=[
+            openapi.Parameter(
+                'tax_number',
+                openapi.IN_QUERY,
+                description="Tax number for customer search",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    @action(detail=False, methods=['get'])
+    def find_by_tax_number(self, request):
+        tax_nmuber = request.query_params.get('tax_number')
+        if not tax_nmuber:
+            return Response({"error": "Missing tax_number"}, status=status.HTTP_400_BAD_REQUEST)
+
+        customer = self.repo.find_by_tax_number(tax_nmuber)
+        serializer = self.serializer_class(customer)
+        return Response(serializer.data)
