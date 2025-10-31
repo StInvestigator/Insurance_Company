@@ -5,19 +5,19 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from insurance.model.claim import Claim
-from ..repository.claim_repository import ClaimRepository
+from ..repository.unit_of_work import UnitOfWork
 from ..serializers import (
     ClaimSerializer
 )
 
 
 class ClaimView(viewsets.ModelViewSet):
-    queryset = Claim.objects.all()
+    with UnitOfWork() as repo:
+        queryset = repo.claims.get_all()
     serializer_class = ClaimSerializer
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.repo = ClaimRepository()
 
     @swagger_auto_schema(
         method='get',
@@ -36,7 +36,7 @@ class ClaimView(viewsets.ModelViewSet):
         policy_id = request.query_params.get('policy_id')
         if not policy_id:
             return Response({"error": "Missing policy_id"}, status=status.HTTP_400_BAD_REQUEST)
-
-        claims = self.repo.find_by_policy(policy_id)
-        serializer = self.serializer_class(claims, many=True)
-        return Response(serializer.data)
+        with UnitOfWork() as repo:
+            claims = repo.claims.find_by_policy(policy_id)
+            serializer = self.serializer_class(claims, many=True)
+            return Response(serializer.data)
