@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Сторінку не знайдено (404){% endblock %}
+
+{% block content %}
+  <div class="error-page">
+    <h1>404 — Сторінку не знайдено</h1>
+    <p>Запитуваної сторінки не існує або вона була переміщена.</p>
+    <a href="{% url 'policy_list' %}">На головну</a>
+  </div>
+{% endblock %}
