@@ -8,6 +8,13 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from insurance.view.register_view import RegisterView
+from .views import (
+    InsurancePolicyListView,
+    InsurancePolicyDetailView,
+    InsurancePolicyCreateView,
+    InsurancePolicyUpdateView,
+    InsurancePolicyDeleteView,
+)
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -19,9 +26,10 @@ schema_view = get_schema_view(
         license=openapi.License(name="MIT License"),
     ),
     public=True,
-    permission_classes=[permissions.AllowAny,],
+    permission_classes=[permissions.AllowAny, ],
 )
 
+app_name = 'insurance'
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
@@ -34,4 +42,10 @@ urlpatterns = [
 
     # Redoc (альтернатива, більш стриманий стиль)
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
+
+    path('policies/', InsurancePolicyListView.as_view(), name='policy_list'),
+    path('policies/create/', InsurancePolicyCreateView.as_view(), name='policy_create'),
+    path('policies/<int:pk>/', InsurancePolicyDetailView.as_view(), name='policy_detail'),
+    path('policies/<int:pk>/edit/', InsurancePolicyUpdateView.as_view(), name='policy_edit'),
+    path('policies/<int:pk>/delete/', InsurancePolicyDeleteView.as_view(), name='policy_delete'),
 ]
