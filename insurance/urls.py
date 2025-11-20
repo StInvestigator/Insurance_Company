@@ -49,3 +49,6 @@ urlpatterns = [
     path('policies/<int:pk>/edit/', InsurancePolicyUpdateView.as_view(), name='policy_edit'),
     path('policies/<int:pk>/delete/', InsurancePolicyDeleteView.as_view(), name='policy_delete'),
 ]
+
+handler404 = 'insurance.view.error_view.custom_404'
+handler500 = 'insurance.view.error_view.custom_500'
