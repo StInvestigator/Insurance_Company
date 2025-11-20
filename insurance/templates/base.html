@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Insurance{% endblock %}</title>
+  {% load static %}
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="{% url 'policy_list' %}">Policies</a> |
+      <a href="{% url 'policy_create' %}">Create policy</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

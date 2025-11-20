@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Edit{% else %}Create{% endif %} Policy{% endblock %}
+{% block content %}
+  <h1>{% if object %}Edit{% else %}Create{% endif %} Policy</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <table>
+      {% for field in form %}
+        <tr>
+          <th>{{ field.label_tag }}</th>
+          <td>
+            {{ field }}
+            {% if field.help_text %}
+              <div class="help">{{ field.help_text }}</div>
+            {% endif %}
+            {% for err in field.errors %}
+              <div class="error">{{ err }}</div>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <button type="submit">Save</button>
+    <a href="{% url 'policy_list' %}">Cancel</a>
+  </form>
+{% endblock %}
