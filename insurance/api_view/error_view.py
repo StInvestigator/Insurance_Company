@@ -1,4 +1,4 @@
-# insurance/view/error_views.py
+# insurance/api_view/error_views.py
 from django.shortcuts import render
 
 def custom_404(request, exception=None):

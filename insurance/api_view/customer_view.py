@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from insurance.model.customer import Customer
 from ..serializers import (
     CustomerSerializer
@@ -12,6 +12,7 @@ from rest_framework import status
 
 
 class CustomerView(viewsets.ModelViewSet):
+    permission_classes = [permissions.AllowAny]
     serializer_class = CustomerSerializer
     with UnitOfWork() as repo:
         queryset = repo.customers.get_all()

@@ -7,13 +7,13 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from insurance.view.register_view import RegisterView
+from insurance.api_view.register_view import RegisterView
 from .views import (
     InsurancePolicyListView,
     InsurancePolicyDetailView,
     InsurancePolicyCreateView,
     InsurancePolicyUpdateView,
-    InsurancePolicyDeleteView,
+    InsurancePolicyDeleteView, ClaimsByCustomerListView,
 )
 
 schema_view = get_schema_view(
@@ -42,6 +42,7 @@ urlpatterns = [
 
     # Redoc (альтернатива, більш стриманий стиль)
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
+    path('claims/byCustomer/<int:pk>/', ClaimsByCustomerListView.as_view(), name='claims_by_customer_list'),
 
     path('policies/', InsurancePolicyListView.as_view(), name='policy_list'),
     path('policies/create/', InsurancePolicyCreateView.as_view(), name='policy_create'),
@@ -50,6 +51,6 @@ urlpatterns = [
     path('policies/<int:pk>/delete/', InsurancePolicyDeleteView.as_view(), name='policy_delete'),
 ]
 
-handler404 = 'insurance.view.error_view.custom_404'
-handler500 = 'insurance.view.error_view.custom_500'
-handler403 = 'insurance.view.error_view.custom_403'
+handler404 = 'insurance.api_view.error_view.custom_404'
+handler500 = 'insurance.api_view.error_view.custom_500'
+handler403 = 'insurance.api_view.error_view.custom_403'
