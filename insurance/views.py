@@ -1,10 +1,11 @@
 # insurance/views.py
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
-from django.shortcuts import get_object_or_404, redirect, render
-from django.http import HttpResponseForbidden
+from django.shortcuts import redirect
+from django.http import HttpResponseForbidden, HttpResponseServerError
 from .model.insurance_policy import InsurancePolicy
 from .forms import InsurancePolicyForm
+import requests
 
 class InsurancePolicyListView(ListView):
     model = InsurancePolicy
@@ -30,16 +31,16 @@ class InsurancePolicyUpdateView(UpdateView):
     success_url = reverse_lazy('policy_list')
 
 class InsurancePolicyDeleteView(View):
-    """
-    Отримує POST з полем 'id' (або стандартний pk з URL) і видаляє запис.
-    Ми перевіряємо що id збігається з URL (додаткова перевірка для безпеки).
-    """
     def post(self, request, pk):
-        # При бажанні додай перевірку прав: if not request.user.is_authenticated: return HttpResponseForbidden()
-        policy = get_object_or_404(InsurancePolicy, pk=pk)
         form_id = request.POST.get('id')
-        if not form_id or str(policy.pk) != str(form_id):
-            # Невласний id — забороняємо видалення
+        if not form_id or str(pk) != str(form_id):
             return HttpResponseForbidden("Invalid ID for deletion")
-        policy.delete()
+
+        url = f"http://localhost:8000/api/policies/{pk}/"
+        response = requests.delete(url)
+
+
+        if response.status_code not in (200, 204):
+            return HttpResponseServerError("Failed to delete policy via API")
+
         return redirect(reverse_lazy('policy_list'))
