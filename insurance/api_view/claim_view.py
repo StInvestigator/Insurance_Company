@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
@@ -12,6 +12,7 @@ from ..serializers import (
 
 
 class ClaimView(viewsets.ModelViewSet):
+    permission_classes = [permissions.AllowAny]
     with UnitOfWork() as repo:
         queryset = repo.claims.get_all()
     serializer_class = ClaimSerializer
@@ -38,5 +39,15 @@ class ClaimView(viewsets.ModelViewSet):
             return Response({"error": "Missing policy_id"}, status=status.HTTP_400_BAD_REQUEST)
         with UnitOfWork() as repo:
             claims = repo.claims.find_by_policy(policy_id)
+            serializer = self.serializer_class(claims, many=True)
+            return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def find_by_customer(self, request):
+        customer_id = request.query_params.get('customer_id')
+        if not customer_id:
+            return Response({"error": "Missing customer_id"}, status=status.HTTP_400_BAD_REQUEST)
+        with UnitOfWork() as repo:
+            claims = repo.claims.find_by_customer(customer_id)
             serializer = self.serializer_class(claims, many=True)
             return Response(serializer.data)
