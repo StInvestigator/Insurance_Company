@@ -52,3 +52,4 @@ urlpatterns = [
 
 handler404 = 'insurance.view.error_view.custom_404'
 handler500 = 'insurance.view.error_view.custom_500'
+handler403 = 'insurance.view.error_view.custom_403'
