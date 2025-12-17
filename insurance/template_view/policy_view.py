@@ -15,25 +15,33 @@ from insurance.forms import InsurancePolicyForm
 API_ROOT = "http://localhost:8000/api"
 TIMEOUT = 5
 
+def _auth_headers_from(request):
+    try:
+        token = request.session.get('jwt_access')
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+    except Exception:
+        pass
+    return {}
 
 def to_objects(items: List[Dict[str, Any]]):
     return [SimpleNamespace(**it) for it in items]
 
 
 def api_get(path: str, params: Dict[str, Any] | None = None):
-    return requests.get(f"{API_ROOT}{path}", params=params, timeout=TIMEOUT)
+    return requests.get(f"{API_ROOT}{path}", params=params, timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
 def api_post(path: str, data: Dict[str, Any]):
-    return requests.post(f"{API_ROOT}{path}", json=data, timeout=TIMEOUT)
+    return requests.post(f"{API_ROOT}{path}", json=data, timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
 def api_put(path: str, data: Dict[str, Any]):
-    return requests.put(f"{API_ROOT}{path}", json=data, timeout=TIMEOUT)
+    return requests.put(f"{API_ROOT}{path}", json=data, timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
 def api_delete(path: str):
-    return requests.delete(f"{API_ROOT}{path}", timeout=TIMEOUT)
+    return requests.delete(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
 class InsurancePolicyListView(ListView):
