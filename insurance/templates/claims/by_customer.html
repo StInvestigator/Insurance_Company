@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Customer claims{% endblock %}
+
+{% block content %}
+  <h1>Claims for customer{% if customer %} (id={{ customer.id }}){% else %} — {% endif %}</h1>
+
+  {% if claims %}
+    <ul>
+      {% for c in claims %}
+        <li>
+          <strong>ID:</strong> {{ c.id }} |
+          <strong>Policy:</strong>
+            <a href="{% url 'policy_detail' c.policy %}">{{ c.policy }}</a> |
+          <strong>Date:</strong> {{ c.claim_date }} |
+          <strong>Amount:</strong> {{ c.amount }}<br>
+          <em>{{ c.description }}</em>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No claims found.</p>
+  {% endif %}
+{% endblock %}

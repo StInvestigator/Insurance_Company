@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+  <h1>Sign in</h1>
+  {% if form.non_field_errors %}
+    <div style="color:#b00;">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+  {% if messages %}
+    <ul>
+      {% for m in messages %}<li>{{ m }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      <label for="id_username">Username</label>
+      <input type="text" name="username" required id="id_username" value="{{ form.username.value|default:'' }}">
+      {% if form.username.errors %}
+        <div style="color:#b00;">{{ form.username.errors }}</div>
+      {% endif %}
+    </div>
+    <div>
+      <label for="id_password">Password</label>
+      <input type="password" name="password" required id="id_password">
+      {% if form.password.errors %}
+        <div style="color:#b00;">{{ form.password.errors }}</div>
+      {% endif %}
+    </div>
+    <button type="submit">Sign in</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Claim{% endblock %}
+{% block content %}
+  <h1>Claim</h1>
+  {% if claim %}
+    <p><strong>ID:</strong> {{ claim.id }}</p>
+    <p><strong>Policy:</strong> {{ claim.policy }}</p>
+    <p><strong>Date:</strong> {{ claim.claim_date }}</p>
+    <p><strong>Amount:</strong> {{ claim.amount }}</p>
+    <p><strong>Description:</strong> {{ claim.description }}</p>
+    <p><strong>Created:</strong> {{ claim.created_at }}</p>
+    <p>
+      <a href="{% url 'claim_edit' claim.id %}">Edit</a> |
+      <a href="{% url 'claim_list' %}">Back to list</a>
+    </p>
+    <form method="post" action="{% url 'claim_delete' claim.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ claim.id }}">
+      <button type="submit" onclick="return confirm('Delete this claim?')">Delete</button>
+    </form>
+  {% else %}
+    <p>Claim not found</p>
+  {% endif %}
+{% endblock %}

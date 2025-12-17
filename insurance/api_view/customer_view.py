@@ -12,7 +12,7 @@ from rest_framework import status
 
 
 class CustomerView(viewsets.ModelViewSet):
-    permission_classes = [permissions.AllowAny]
+    # permission_classes = [permissions.AllowAny]
     serializer_class = CustomerSerializer
     with UnitOfWork() as repo:
         queryset = repo.customers.get_all()
@@ -43,15 +43,22 @@ class CustomerView(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
         partial = kwargs.pop('partial', False)
-        if serializer.is_valid() or partial:
-            with UnitOfWork() as repo:
-                policy = repo.customers.update(pk, **serializer.validated_data)
-            if not policy:
+        with UnitOfWork() as repo:
+            instance = repo.customers.get_by_id(pk)
+            if not instance:
                 return Response({"error": "Policy not found"}, status=status.HTTP_404_NOT_FOUND)
-            return Response(self.serializer_class(policy).data)
+
+        serializer = self.serializer_class(instance, data=request.data, partial=partial)
+        if serializer.is_valid():
+            with UnitOfWork() as repo:
+                updated = repo.customers.update(pk, **serializer.validated_data)
+            return Response(self.serializer_class(updated).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, pk=None, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, pk, *args, **kwargs)
 
     def destroy(self, request, pk=None, *args, **kwargs):
         with UnitOfWork() as repo:

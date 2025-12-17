@@ -7,10 +7,27 @@
 </head>
 <body>
   <header>
-    <nav>
-      <a href="{% url 'policy_list' %}">Policies</a> |
-      <a href="{% url 'policy_create' %}">Create policy</a> |
-      <a href="{% url 'claims_by_customer_list' 1 %}">Customer 1 claims</a>
+    <nav style="display:flex; align-items:center; gap:12px; padding:8px 12px; border-bottom:1px solid #ddd;">
+      <div style="display:flex; gap:12px;">
+        <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'policy_list' %}">Policies</a>
+        <a href="{% url 'customer_list' %}">Customers</a>
+        <a href="{% url 'payment_list' %}">Payments</a>
+        <a href="{% url 'claim_list' %}">Claims</a>
+        <a href="{% url 'swagger-ui' %}">Swagger</a>
+      </div>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+        {% if request.session.jwt_access %}
+          <span>Hello, {{ user.username }}!</span>
+          <form action="{% url 'logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" style="background:none; border:none; color:#06c; cursor:pointer;">Sign out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Sign in</a>
+          <a href="{% url 'register_page' %}">Sign up</a>
+        {% endif %}
+      </div>
     </nav>
   </header>
   <main>

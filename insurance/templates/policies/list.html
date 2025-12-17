@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Policies{% endblock %}
+{% block content %}
+  <h1>Insurance Policies</h1>
+  <p><a href="{% url 'policy_create' %}">Create new policy</a></p>
+
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Number</th>
+        <th>Type</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Premium</th>
+        <th>Coverage</th>
+        <th>Customer</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in policies %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td><a href="{% url 'policy_detail' p.id %}">{{ p.policy_number }}</a></td>
+          <td>{{ p.policy_type }}</td>
+          <td>{{ p.start_date }}</td>
+          <td>{% if p.end_date %}{{ p.end_date }}{% else %}—{% endif %}</td>
+          <td>{{ p.premium }}</td>
+          <td>{{ p.coverage_amount }}</td>
+          <td>{{ p.customer }}</td>
+          <td>{{ p.created_at }}</td>
+          <td>
+            <a href="{% url 'policy_detail' p.id %}">View</a> |
+            <a href="{% url 'policy_edit' p.id %}">Edit</a>
+            <form method="post" action="{% url 'policy_delete' p.id %}" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ p.id }}">
+              <button type="submit" onclick="return confirm('Delete this policy?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10">No policies yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

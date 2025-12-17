@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Claim form{% endblock %}
+{% block content %}
+  <h1>Claim form</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+  </form>
+  <p><a href="{% url 'claim_list' %}">Back to list</a></p>
+{% endblock %}

@@ -11,7 +11,7 @@
   <p><strong>Created:</strong> {{ policy.created_at }}</p>
 
   <p>
-    <a href="{% url 'policy_edit' policy.pk %}">Edit</a>
+    <a href="{% url 'policy_edit' policy.id %}">Edit</a>
     |
     <a href="{% url 'policy_list' %}">Back to list</a>
   </p>
@@ -19,10 +19,10 @@
   <hr>
 
   <h3>Delete this policy</h3>
-  <form action="{% url 'policy_delete' policy.pk %}" method="post" onsubmit="return confirm('Are you sure you want to delete this policy?');">
+  <form action="{% url 'policy_delete' policy.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this policy?');">
     {% csrf_token %}
     <!-- видаляємо по ID — передаємо hidden поле id -->
-    <input type="hidden" name="id" value="{{ policy.pk }}">
+    <input type="hidden" name="id" value="{{ policy.id }}">
     <button type="submit">Delete policy</button>
   </form>
 {% endblock %}

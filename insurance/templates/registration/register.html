@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block content %}
+  <h1>Sign up</h1>
+  {% if messages %}
+    <ul>
+      {% for m in messages %}<li>{{ m }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      <label for="id_username">Username</label>
+      <input type="text" name="username" id="id_username" value="{{ username|default:'' }}" required>
+    </div>
+    <div>
+      <label for="id_email">Email</label>
+      <input type="email" name="email" id="id_email" value="{{ email|default:'' }}">
+    </div>
+    <div>
+      <label for="id_password">Password</label>
+      <input type="password" name="password" id="id_password" required>
+    </div>
+    <div>
+      <label for="id_password2">Confirm password</label>
+      <input type="password" name="password2" id="id_password2" required>
+    </div>
+    <button type="submit">Create account</button>
+  </form>
+{% endblock %}
