@@ -1,8 +1,11 @@
 from .base_repository import BaseRepository
 from insurance.model.claim import Claim
 from django.db import models
-from django.db.models import Avg, Count, Sum, F, Case, When, Value
-from django.db.models.functions import ExtractYear, Now
+from django.db.models import Avg, Count, Sum, F, Case, When, Value, IntegerField
+from django.db.models.functions import ExtractYear, Now, Coalesce
+
+from ..model.customer import Customer
+
 
 class ClaimRepository(BaseRepository):
     def __init__(self):
@@ -47,16 +50,22 @@ class ClaimRepository(BaseRepository):
         return qs
 
     def claims_per_customer(self, only_with_claims=False):
-        from insurance.model.customer import Customer
-        customers = Customer.objects.all().values('id', 'full_name')
         qs = (
-            self.model.objects
-            .values('policy__customer_id')
-            .annotate(claims_count=Count('id'))
+            Customer.objects
+            .annotate(
+                claims_count=Coalesce(
+                    Count(
+                        'policies__claims',
+                        distinct=True
+                    ),
+                    Value(0),
+                    output_field=IntegerField()
+                )
+            )
+            .values('id', 'full_name', 'claims_count')
         )
-        from django.db.models import OuterRef, Subquery
-        sub = Subquery(qs.filter(policy__customer_id=OuterRef('id')).values('claims_count')[:1])
-        annotated = customers.annotate(claims_count=sub)
+
         if only_with_claims:
-            annotated = annotated.filter(claims_count__gt=0)
-        return annotated.order_by('-claims_count', 'full_name')
+            qs = qs.filter(claims_count__gt=0)
+
+        return qs.order_by('-claims_count', 'full_name')

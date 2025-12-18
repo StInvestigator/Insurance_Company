@@ -168,6 +168,7 @@ class AnalyticsDashboardV1View(TemplateView):
             fig2.update_layout(title='Average claim amount by age group (error)', margin=dict(t=40))
             c2_html = _to_plotly_html(fig2)
 
+        # 3
         try:
             # debug info (server log) — можно убрать позже
             print("DEBUG df3.columns:", getattr(df3, 'columns', None))
@@ -377,14 +378,26 @@ class AnalyticsDashboardV2View(TemplateView):
 
         # 5) Time to first claim (box-like via jitter bars simplified)
         # For simplicity, draw scatter per type (boxplot in bokeh requires more setup)
-        f5 = figure(height=350, title='Time to first claim (days) per policy type')
         if not df5.empty and 'policy_type' in df5.columns and 'days' in df5.columns:
+            # категориальные X
+            policy_types = sorted(df5['policy_type'].dropna().unique().tolist())
+            f5 = figure(
+                height=350,
+                x_range=policy_types,
+                title='Time to first claim (days) per policy type',
+                y_axis_label='Days'
+            )
+
             for ptype, grp in df5.groupby('policy_type'):
-                xs = [str(ptype)] * len(grp)
                 ys = grp['days'].dropna().astype(float).tolist()
-                src = ColumnDataSource(dict(x=xs, y=ys))
-                f5.scatter(x='x', y='y', size=6, alpha=0.6, source=src, legend_label=str(ptype))
-        c5_script, c5_div = components(f5)
+                if ys:  # пропускаем пустые группы
+                    xs = [ptype] * len(ys)
+                    src = ColumnDataSource(dict(x=xs, y=ys))
+                    f5.circle(x='x', y='y', size=6, alpha=0.6, source=src, legend_label=str(ptype))
+
+            f5.legend.title = 'Policy Type'
+            f5.xaxis.axis_label = 'Policy Type'
+            c5_script, c5_div = components(f5)
 
         # 6) Top customers by payouts (bar)
         x6 = df6['claim__policy__customer__full_name'].tolist() if not df6.empty else []
