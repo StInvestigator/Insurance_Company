@@ -51,10 +51,40 @@ class PaymentListView(ListView):
     context_object_name = 'payments'
 
     def get_queryset(self):
-        resp = api_get(self.request, '/payments/')
-        if resp.status_code == 200:
-            return to_objects(resp.json())
         return []
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        try:
+            page = int(self.request.GET.get('page', '1'))
+        except ValueError:
+            page = 1
+        params = {'page': page, 'page_size': 10}
+        resp = api_get(self.request, '/payments/', params=params)
+        items: List[Dict[str, Any]] = []
+        total_pages = 1
+        if resp.status_code == 200:
+            data = resp.json()
+            items = data.get('items', [])
+            total_pages = data.get('total_pages', 1)
+        current = max(1, min(page, total_pages))
+        has_prev = current > 1
+        has_next = current < total_pages
+        def _next():
+            return current + 1 if has_next else current
+        def _prev():
+            return current - 1 if has_prev else current
+        ctx['payments'] = to_objects(items)
+        ctx['is_paginated'] = total_pages > 1
+        ctx['paginator'] = SimpleNamespace(num_pages=total_pages)
+        ctx['page_obj'] = SimpleNamespace(
+            number=current,
+            has_previous=has_prev,
+            has_next=has_next,
+            previous_page_number=_prev,
+            next_page_number=_next,
+        )
+        return ctx
 
 
 class PaymentDetailView(TemplateView):
@@ -96,7 +126,7 @@ class PaymentUpdateView(FormView):
 
     def get_initial(self):
         pk = self.kwargs.get('pk')
-        resp = api_get(f'/payments/{pk}/')
+        resp = api_get(self.request, f'/payments/{pk}/')
         if resp.status_code == 200:
             data = resp.json()
             return {

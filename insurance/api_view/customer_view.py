@@ -21,10 +21,27 @@ class CustomerView(viewsets.ModelViewSet):
         super().__init__(**kwargs)
 
     def list(self, request, *args, **kwargs):
+        page = int(request.query_params.get('page', 1) or 1)
+        page_size = int(request.query_params.get('page_size', 10) or 10)
+        if page < 1:
+            page = 1
+        if page_size < 1:
+            page_size = 10
         with UnitOfWork() as repo:
-            policies = repo.customers.get_all()
-            serializer = self.serializer_class(policies, many=True)
-            return Response(serializer.data)
+            qs = repo.customers.get_all()
+            total = qs.count()
+            start = (page - 1) * page_size
+            end = start + page_size
+            items = list(qs.order_by('id')[start:end])
+            serializer = self.serializer_class(items, many=True)
+            total_pages = (total + page_size - 1) // page_size if page_size else 1
+            return Response({
+                'items': serializer.data,
+                'total': total,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+            })
 
     def retrieve(self, request, pk=None, *args, **kwargs):
         with UnitOfWork() as repo:
@@ -88,3 +105,8 @@ class CustomerView(viewsets.ModelViewSet):
             customer = repo.customers.find_by_tax_number(tax_number)
             serializer = self.serializer_class(customer)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def count(self, request):
+        with UnitOfWork() as repo:
+            return Response({"count": repo.customers.count()})

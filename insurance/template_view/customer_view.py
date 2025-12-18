@@ -51,10 +51,42 @@ class CustomerListView(ListView):
     context_object_name = 'customers'
 
     def get_queryset(self):
-        resp = api_get(self.request, '/customers/')
-        if resp.status_code == 200:
-            return to_objects(resp.json())
         return []
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        try:
+            page = int(self.request.GET.get('page', '1'))
+        except ValueError:
+            page = 1
+        params = {'page': page, 'page_size': 10}
+        resp = api_get(self.request, '/customers/', params=params)
+        items: List[Dict[str, Any]] = []
+        total = 0
+        total_pages = 1
+        if resp.status_code == 200:
+            data = resp.json()
+            items = data.get('items', [])
+            total = data.get('total', 0)
+            total_pages = data.get('total_pages', 1)
+        current = max(1, min(page, total_pages))
+        has_prev = current > 1
+        has_next = current < total_pages
+        def _next():
+            return current + 1 if has_next else current
+        def _prev():
+            return current - 1 if has_prev else current
+        ctx['customers'] = to_objects(items)
+        ctx['is_paginated'] = total_pages > 1
+        ctx['paginator'] = SimpleNamespace(num_pages=total_pages)
+        ctx['page_obj'] = SimpleNamespace(
+            number=current,
+            has_previous=has_prev,
+            has_next=has_next,
+            previous_page_number=_prev,
+            next_page_number=_next,
+        )
+        return ctx
 
 
 class CustomerDetailView(TemplateView):
@@ -99,25 +131,20 @@ class CustomerUpdateView(FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # Передаём instance с текущим pk, чтобы ModelForm корректно обрабатывала
-        # уникальные поля (email, tax_number) при обновлении существующего клиента.
         try:
             pk = self.kwargs.get('pk')
             if pk is not None:
                 from insurance.model.customer import Customer
-                # Важно: получить объект из БД, чтобы instance._state.adding = False,
-                # иначе Django воспримет форму как создание и сработают unique-ошибки.
                 instance = Customer.objects.filter(pk=pk).first()
                 if instance is not None:
                     kwargs['instance'] = instance
         except Exception:
-            # В случае любой ошибки просто продолжаем без instance
             pass
         return kwargs
 
     def get_initial(self):
         pk = self.kwargs.get('pk')
-        resp = api_get(f'/customers/{pk}/')
+        resp = api_get(self.request, f'/customers/{pk}/')
         if resp.status_code == 200:
             data = resp.json()
             return {

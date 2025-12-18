@@ -12,6 +12,7 @@
     <p><strong>Address:</strong> {{ customer.address }}</p>
     <p><strong>Created:</strong> {{ customer.created_at }}</p>
     <p>
+      <a href="{% url 'claims_by_customer_list' customer.id %}">View claims</a> |
       <a href="{% url 'customer_edit' customer.id %}">Edit</a> |
       <a href="{% url 'customer_list' %}">Back to list</a>
     </p>

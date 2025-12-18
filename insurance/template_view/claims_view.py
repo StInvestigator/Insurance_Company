@@ -39,7 +39,7 @@ def api_post(request, path: str, data: Dict[str, Any]):
 
 
 def api_put(request, path: str, data: Dict[str, Any]):
-    return requests.patch(f"{API_ROOT}{path}", json=data, timeout=TIMEOUT, headers=_auth_headers_from(request))
+    return requests.put(f"{API_ROOT}{path}", json=data, timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
 def api_delete(request, path: str):
@@ -49,33 +49,97 @@ def api_delete(request, path: str):
 class ClaimsByCustomerListView(ListView):
     template_name = 'claims/by_customer.html'
     context_object_name = 'claims'
-
+    
     def get_queryset(self):
-        pk = self.kwargs.get('pk')
-        try:
-            customer_id = int(pk)
-        except (TypeError, ValueError):
-            return []
-        resp = api_get(self.request, '/claims/find_by_customer', params={'customer_id': customer_id})
-        if resp.status_code == 200:
-            return to_objects(resp.json())
         return []
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['customer'] = {'id': self.kwargs.get('pk')}
+        pk = self.kwargs.get('pk')
+        try:
+            page = int(self.request.GET.get('page', '1'))
+        except ValueError:
+            page = 1
+        params = {'customer_id': pk, 'page': page, 'page_size': 10}
+        resp = api_get(self.request, '/claims/find_by_customer', params=params)
+        items: List[Dict[str, Any]] = []
+        total_pages = 1
+        if resp.status_code == 200:
+            data = resp.json()
+            # поддержка старого формата на случай, если API не обновлен
+            if isinstance(data, list):
+                items = data
+                total_pages = 1
+            else:
+                items = data.get('items', [])
+                total_pages = data.get('total_pages', 1)
+        try:
+            current = max(1, min(page, total_pages))
+        except Exception:
+            current = 1
+        has_prev = current > 1
+        has_next = current < total_pages
+        def _next():
+            return current + 1 if has_next else current
+        def _prev():
+            return current - 1 if has_prev else current
+        ctx['claims'] = to_objects(items)
+        ctx['is_paginated'] = total_pages > 1
+        ctx['paginator'] = SimpleNamespace(num_pages=total_pages)
+        ctx['page_obj'] = SimpleNamespace(
+            number=current,
+            has_previous=has_prev,
+            has_next=has_next,
+            previous_page_number=_prev,
+            next_page_number=_next,
+        )
+        ctx['customer'] = {'id': pk}
         return ctx
 
 
 class ClaimListView(ListView):
     template_name = 'claims/list.html'
     context_object_name = 'claims'
-
+    
     def get_queryset(self):
-        resp = api_get(self.request, '/claims/')
-        if resp.status_code == 200:
-            return to_objects(resp.json())
         return []
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        try:
+            page = int(self.request.GET.get('page', '1'))
+        except ValueError:
+            page = 1
+        params = {'page': page, 'page_size': 10}
+        resp = api_get(self.request, '/claims/', params=params)
+        items: List[Dict[str, Any]] = []
+        total_pages = 1
+        if resp.status_code == 200:
+            data = resp.json()
+            if isinstance(data, list):
+                items = data
+                total_pages = 1
+            else:
+                items = data.get('items', [])
+                total_pages = data.get('total_pages', 1)
+        current = max(1, min(page, total_pages))
+        has_prev = current > 1
+        has_next = current < total_pages
+        def _next():
+            return current + 1 if has_next else current
+        def _prev():
+            return current - 1 if has_prev else current
+        ctx['claims'] = to_objects(items)
+        ctx['is_paginated'] = total_pages > 1
+        ctx['paginator'] = SimpleNamespace(num_pages=total_pages)
+        ctx['page_obj'] = SimpleNamespace(
+            number=current,
+            has_previous=has_prev,
+            has_next=has_next,
+            previous_page_number=_prev,
+            next_page_number=_next,
+        )
+        return ctx
 
 
 class ClaimDetailView(TemplateView):
@@ -119,7 +183,7 @@ class ClaimUpdateView(FormView):
 
     def get_initial(self):
         pk = self.kwargs.get('pk')
-        resp = api_get(f'/claims/{pk}/')
+        resp = api_get(self.request, f'/claims/{pk}/')
         if resp.status_code == 200:
             data = resp.json()
             return {

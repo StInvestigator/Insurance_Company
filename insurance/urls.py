@@ -63,10 +63,10 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # Swagger UI
-    # path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
-    #
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
+
     # # Redoc (альтернатива, більш стриманий стиль)
-    # path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
     path('claims/byCustomer/<int:pk>/', ClaimsByCustomerListView.as_view(), name='claims_by_customer_list'),
 
     # Customers

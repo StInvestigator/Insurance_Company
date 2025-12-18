@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Unauthorized (401){% endblock %}
+
+{% block content %}
+  <div class="error-page">
+    <h1>401 — Unauthorized</h1>
+    <p>You have to rights to do this</p>
+    <a href="{% url 'login' %}">Take me to login page :(</a>
+  </div>
+{% endblock %}

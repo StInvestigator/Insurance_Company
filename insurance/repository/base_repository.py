@@ -29,3 +29,6 @@ class BaseRepository(Generic[T]):
     def delete(self, obj_id: int) -> bool:
         deleted, _ = self.model.objects.filter(id=obj_id).delete()
         return bool(deleted)
+
+    def count(self):
+        return self.model.objects.count()

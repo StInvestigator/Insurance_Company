@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="EN">
 <head>
   <meta charset="utf-8">
   <title>{% block title %}Insurance{% endblock %}</title>
@@ -14,7 +14,6 @@
         <a href="{% url 'customer_list' %}">Customers</a>
         <a href="{% url 'payment_list' %}">Payments</a>
         <a href="{% url 'claim_list' %}">Claims</a>
-        <a href="{% url 'swagger-ui' %}">Swagger</a>
       </div>
       <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
         {% if request.session.jwt_access %}
