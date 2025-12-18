@@ -97,6 +97,7 @@ urlpatterns = [
     path('policies/<int:pk>/delete/', InsurancePolicyDeleteView.as_view(), name='policy_delete'),
 ]
 
+handler401 = 'insurance.template_view.error_view.custom_401'
 handler404 = 'insurance.template_view.error_view.custom_404'
 handler500 = 'insurance.template_view.error_view.custom_500'
 handler403 = 'insurance.template_view.error_view.custom_403'

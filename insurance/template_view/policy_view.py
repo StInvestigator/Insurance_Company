@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, List
 
 import requests
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseServerError, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -44,7 +45,7 @@ def api_delete(request, path: str):
     return requests.delete(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
-class InsurancePolicyListView(ListView):
+class InsurancePolicyListView(LoginRequiredMixin, ListView):
     template_name = 'policies/list.html'
     context_object_name = 'policies'
     
@@ -89,7 +90,7 @@ class InsurancePolicyListView(ListView):
         return ctx
 
 
-class InsurancePolicyDetailView(TemplateView):
+class InsurancePolicyDetailView(LoginRequiredMixin, TemplateView):
     template_name = 'policies/detail.html'
 
     def get_context_data(self, **kwargs):
@@ -103,7 +104,7 @@ class InsurancePolicyDetailView(TemplateView):
         return ctx
 
 
-class InsurancePolicyCreateView(FormView):
+class InsurancePolicyCreateView(LoginRequiredMixin, FormView):
     template_name = 'policies/form.html'
     form_class = InsurancePolicyForm
     success_url = reverse_lazy('policy_list')
@@ -125,7 +126,7 @@ class InsurancePolicyCreateView(FormView):
         return self.form_invalid(form)
 
 
-class InsurancePolicyUpdateView(FormView):
+class InsurancePolicyUpdateView(LoginRequiredMixin, FormView):
     template_name = 'policies/form.html'
     form_class = InsurancePolicyForm
     success_url = reverse_lazy('policy_list')
@@ -177,7 +178,7 @@ class InsurancePolicyUpdateView(FormView):
         return self.form_invalid(form)
 
 
-class InsurancePolicyDeleteView(View):
+class InsurancePolicyDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         form_id = request.POST.get('id')
         if not form_id or str(pk) != str(form_id):

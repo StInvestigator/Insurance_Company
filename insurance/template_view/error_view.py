@@ -4,6 +4,9 @@ from django.shortcuts import render
 def custom_404(request, exception=None):
     return render(request, "errors/404.html", status=404)
 
+def custom_401(request, exception=None):
+    return render(request, "errors/401.html", status=401)
+
 def custom_500(request):
     return render(request, "errors/500.html", status=500)
 

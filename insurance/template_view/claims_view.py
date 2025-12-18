@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, List
 
 import requests
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseServerError, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
@@ -46,7 +47,7 @@ def api_delete(request, path: str):
     return requests.delete(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
-class ClaimsByCustomerListView(ListView):
+class ClaimsByCustomerListView(LoginRequiredMixin, ListView):
     template_name = 'claims/by_customer.html'
     context_object_name = 'claims'
     
@@ -97,7 +98,7 @@ class ClaimsByCustomerListView(ListView):
         return ctx
 
 
-class ClaimListView(ListView):
+class ClaimListView(LoginRequiredMixin, ListView):
     template_name = 'claims/list.html'
     context_object_name = 'claims'
     
@@ -142,7 +143,7 @@ class ClaimListView(ListView):
         return ctx
 
 
-class ClaimDetailView(TemplateView):
+class ClaimDetailView(LoginRequiredMixin, TemplateView):
     template_name = 'claims/detail.html'
 
     def get_context_data(self, **kwargs):
@@ -156,7 +157,7 @@ class ClaimDetailView(TemplateView):
         return ctx
 
 
-class ClaimCreateView(FormView):
+class ClaimCreateView(LoginRequiredMixin, FormView):
     template_name = 'claims/form.html'
     form_class = ClaimForm
     success_url = reverse_lazy('claim_list')
@@ -176,7 +177,7 @@ class ClaimCreateView(FormView):
         return self.form_invalid(form)
 
 
-class ClaimUpdateView(FormView):
+class ClaimUpdateView(LoginRequiredMixin, FormView):
     template_name = 'claims/form.html'
     form_class = ClaimForm
     success_url = reverse_lazy('claim_list')
@@ -209,7 +210,7 @@ class ClaimUpdateView(FormView):
         return self.form_invalid(form)
 
 
-class ClaimDeleteView(View):
+class ClaimDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         form_id = request.POST.get('id')
         if not form_id or str(pk) != str(form_id):

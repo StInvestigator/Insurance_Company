@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, List
 
 import requests
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseServerError, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -46,7 +47,7 @@ def api_delete(request, path: str):
     return requests.delete(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
-class CustomerListView(ListView):
+class CustomerListView(LoginRequiredMixin, ListView):
     template_name = 'customers/list.html'
     context_object_name = 'customers'
 
@@ -89,7 +90,7 @@ class CustomerListView(ListView):
         return ctx
 
 
-class CustomerDetailView(TemplateView):
+class CustomerDetailView(LoginRequiredMixin, TemplateView):
     template_name = 'customers/detail.html'
 
     def get_context_data(self, **kwargs):
@@ -103,7 +104,7 @@ class CustomerDetailView(TemplateView):
         return ctx
 
 
-class CustomerCreateView(FormView):
+class CustomerCreateView(LoginRequiredMixin, FormView):
     template_name = 'customers/form.html'
     form_class = CustomerForm
     success_url = reverse_lazy('customer_list')
@@ -124,7 +125,7 @@ class CustomerCreateView(FormView):
         return self.form_invalid(form)
 
 
-class CustomerUpdateView(FormView):
+class CustomerUpdateView(LoginRequiredMixin, FormView):
     template_name = 'customers/form.html'
     form_class = CustomerForm
     success_url = reverse_lazy('customer_list')
@@ -174,7 +175,7 @@ class CustomerUpdateView(FormView):
         return self.form_invalid(form)
 
 
-class CustomerDeleteView(View):
+class CustomerDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         form_id = request.POST.get('id')
         if not form_id or str(pk) != str(form_id):

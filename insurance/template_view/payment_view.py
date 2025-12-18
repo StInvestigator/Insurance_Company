@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, List
 
 import requests
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseServerError, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -46,7 +47,7 @@ def api_delete(request, path: str):
     return requests.delete(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=_auth_headers_from(request))
 
 
-class PaymentListView(ListView):
+class PaymentListView(LoginRequiredMixin, ListView):
     template_name = 'payments/list.html'
     context_object_name = 'payments'
 
@@ -87,7 +88,7 @@ class PaymentListView(ListView):
         return ctx
 
 
-class PaymentDetailView(TemplateView):
+class PaymentDetailView(LoginRequiredMixin, TemplateView):
     template_name = 'payments/detail.html'
 
     def get_context_data(self, **kwargs):
@@ -101,7 +102,7 @@ class PaymentDetailView(TemplateView):
         return ctx
 
 
-class PaymentCreateView(FormView):
+class PaymentCreateView(LoginRequiredMixin, FormView):
     template_name = 'payments/form.html'
     form_class = PaymentForm
     success_url = reverse_lazy('payment_list')
@@ -119,7 +120,7 @@ class PaymentCreateView(FormView):
         return self.form_invalid(form)
 
 
-class PaymentUpdateView(FormView):
+class PaymentUpdateView(LoginRequiredMixin, FormView):
     template_name = 'payments/form.html'
     form_class = PaymentForm
     success_url = reverse_lazy('payment_list')
@@ -150,7 +151,7 @@ class PaymentUpdateView(FormView):
         return self.form_invalid(form)
 
 
-class PaymentDeleteView(View):
+class PaymentDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         form_id = request.POST.get('id')
         if not form_id or str(pk) != str(form_id):
