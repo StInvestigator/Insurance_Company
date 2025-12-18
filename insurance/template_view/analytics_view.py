@@ -1,6 +1,5 @@
-# views_analytics_api.py
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict
 import logging
 import math
 import requests
@@ -8,7 +7,6 @@ from urllib.parse import urljoin
 
 import pandas as pd
 import numpy as np
-from django.conf import settings
 from django.views.generic import TemplateView
 
 # Plotly imports (for V1)
@@ -18,16 +16,12 @@ import plotly.io as pio
 # Bokeh imports (for V2)
 from bokeh.embed import components
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.transform import cumsum
-from bokeh.palettes import Category20
+from bokeh.models import ColumnDataSource
 
 logger = logging.getLogger(__name__)
 
-# Default base path for analytics API (adjust in settings if needed)
 API_BASE = "/api/analytics"
 
-# Helpers (reuse/adapt from your previous code)
 def _parse_params(request) -> Dict[str, Any]:
     df = request.GET.get('date_from') or ''
     dt = request.GET.get('date_to') or ''
@@ -101,7 +95,6 @@ def _timedelta_to_days(val) -> float | None:
         pass
     return None
 
-# HTTP client for analytics API
 def api_get(request, path: str, params: Dict[str, Any] = None, timeout=6):
     """
     Perform GET to analytics API and return parsed JSON.
@@ -109,11 +102,9 @@ def api_get(request, path: str, params: Dict[str, Any] = None, timeout=6):
     - params: dict of query params (values must be serializable)
     """
     base = API_BASE
-    # ensure starting slash
     if not base.endswith('/'):
         base = base + '/'
-    url = urljoin(request.build_absolute_uri('/'), '')  # scheme://host/
-    # combine host base + API_BASE + path
+    url = urljoin(request.build_absolute_uri('/'), '')
     api_root = urljoin(url, base.lstrip('/'))
     full = urljoin(api_root, path.lstrip('/'))
     try:
@@ -172,7 +163,6 @@ class AnalyticsDashboardV1View(TemplateView):
             'date_to': p['date_to']
         }) or {}
 
-        # convert API 'data' into dataframes
         df1 = _to_df_from_api(r1.get('data') if isinstance(r1, dict) else r1)
         df2 = _to_df_from_api(r2.get('data') if isinstance(r2, dict) else r2)
         df3 = _to_df_from_api(r3.get('data') if isinstance(r3, dict) else r3)
@@ -180,11 +170,9 @@ class AnalyticsDashboardV1View(TemplateView):
         df5 = _to_df_from_api(r5.get('data') if isinstance(r5, dict) else r5)
         df6 = _to_df_from_api(r6.get('data') if isinstance(r6, dict) else r6)
 
-        # normalize/parse df5 delta -> days if needed
         if not df5.empty and 'delta' in df5.columns:
             df5['days'] = df5['delta'].apply(lambda d: _timedelta_to_days(d))
 
-        # Helper to create HTML for Plotly graph, assuming template includes plotly.js
         def _to_plotly_html(fig):
             return pio.to_html(fig, include_plotlyjs=False, full_html=False)
 
@@ -217,9 +205,8 @@ class AnalyticsDashboardV1View(TemplateView):
             vals = df3['claims_count'].tolist()
             uniq = sorted(set(vals))
             if len(uniq) <= 6:
-                # discrete bar by counts
                 counts = df3['claims_count'].value_counts().sort_index()
-                fig3 = go.Figure(data=[go.Bar(x=list(counts.index.astype(int)), y=list(counts.values))])
+                fig3 = go.Figure(data=[go.Bar(x=list(counts.index.astype(int)), y=counts.to_list())])
                 fig3.update_layout(title='Claims per customer (counts)', xaxis_title='Number of claims', yaxis_title='Customers')
             else:
                 nbins = min(50, max(1, int(math.sqrt(len(vals)))))
@@ -263,7 +250,6 @@ class AnalyticsDashboardV1View(TemplateView):
 
         # 6) Top customers by payouts
         if not df6.empty:
-            # normalize name field if backend uses different key
             name_col = None
             for candidate in ['claim__policy__customer__full_name', 'full_name', 'customer__full_name']:
                 if candidate in df6.columns:
@@ -337,7 +323,6 @@ class AnalyticsDashboardV2View(TemplateView):
         if not df5.empty and 'delta' in df5.columns:
             df5['days'] = df5['delta'].apply(lambda d: _timedelta_to_days(d))
 
-        # BUILD BOKEH FIGURES (robust: handle empty frames etc.)
         # 1) Payments by month and policy type
         if not df1.empty:
             x1 = (df1.get('month', df1.index.astype(str)).astype(str) + ' / ' + df1.get('ptype', df1.get('policy_type', '')).astype(str)).tolist()
@@ -364,8 +349,6 @@ class AnalyticsDashboardV2View(TemplateView):
         c2_script, c2_div = components(f2)
 
         # 3) Claims per customer (bar for discrete)
-
-        # Approximate histogram by binning on server
         x3 = df3['claims_count'].fillna(0).astype(int).tolist() if not df3.empty else []
         hist, edges = np.histogram(x3, bins=min(10, max(1, len(set(x3)) or 1))) if x3 else ([], [0, 1])
         src3 = ColumnDataSource(dict(top=hist.tolist() if len(hist) else [], left=edges[:-1].tolist() if len(edges)>1 else [0], right=edges[1:].tolist() if len(edges)>1 else [1]))
