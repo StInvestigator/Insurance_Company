@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Analytics v1 (Plotly){% endblock %}
+{% block content %}
+<h1>Analytics v1 (Plotly)</h1>
+
+<form method="get" style="margin:10px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+  <label>From: <input type="date" name="date_from" value="{% if params.date_from %}{{ params.date_from }}{% endif %}"></label>
+  <label>To: <input type="date" name="date_to" value="{% if params.date_to %}{{ params.date_to }}{% endif %}"></label>
+  <label>Policy type: <input type="text" name="policy_type" value="{{ params.policy_type|default:'' }}" placeholder="e.g. Health"></label>
+  <label>Top N: <input type="number" name="limit" value="{{ params.limit|default:10 }}" min="1" style="width:80px"></label>
+  <label>Threshold: <input type="number" name="threshold" value="{{ params.threshold|default:0 }}" step="0.01" style="width:120px"></label>
+  <button type="submit">Apply</button>
+  <a href="?" style="display:inline-block; padding:0 8px;">Reset</a>
+</form>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:18px;">
+  <div>{{ c1_html|safe }}</div>
+  <div>{{ c2_html|safe }}</div>
+  <div>{{ c3_html|safe }}</div>
+  <div>{{ c4_html|safe }}</div>
+  <div>{{ c5_html|safe }}</div>
+  <div>{{ c6_html|safe }}</div>
+  </div>
+{% endblock %}
