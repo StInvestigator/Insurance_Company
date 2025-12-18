@@ -1,0 +1,7 @@
+django>=4.2
+djangorestframework>=3.14
+drf-yasg>=1.21
+djangorestframework-simplejwt>=5.3
+pandas>=2.2
+plotly>=5.24
+bokeh>=3.6

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Analytics v2 (Bokeh){% endblock %}
+{% block content %}
+<h1>Analytics v2 (Bokeh)</h1>
+
+<div style="margin:10px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+  <label>From: <input type="date" id="f_date_from"></label>
+  <label>To: <input type="date" id="f_date_to"></label>
+  <label>Policy type: <input type="text" id="f_policy_type" placeholder="e.g. Health"></label>
+  <label>Top N: <input type="number" id="f_top_n" value="10" min="1" style="width:80px"></label>
+  <label>Threshold: <input type="number" id="f_threshold" value="0" step="0.01" style="width:120px"></label>
+  <button id="btn_apply">Apply</button>
+  <button id="btn_reset">Reset</button>
+  <span id="meta_info"></span>
+</div>
+
+<div id="charts" style="display:grid; grid-template-columns: 1fr 1fr; gap:18px;">
+  <div id="b1"></div>
+  <div id="b2"></div>
+  <div id="b3"></div>
+  <div id="b4"></div>
+  <div id="b5"></div>
+  <div id="b6"></div>
+  <div id="b6_legend"></div>
+  </div>
+
+<link rel="stylesheet" href="https://cdn.bokeh.org/bokeh/release/bokeh-3.6.1.min.css">
+<script src="https://cdn.bokeh.org/bokeh/release/bokeh-3.6.1.min.js"></script>
+<script>
+const q = sel => document.querySelector(sel);
+function params() {
+  return {
+    date_from: q('#f_date_from').value || '',
+    date_to: q('#f_date_to').value || '',
+    policy_type: q('#f_policy_type').value || '',
+    limit: q('#f_top_n').value || 10,
+    threshold: q('#f_threshold').value || 0
+  };
+}
+function buildUrl(path, extra={}){
+  const p = {...params(), ...extra};
+  const sp = new URLSearchParams();
+  Object.entries(p).forEach(([k,v])=>{ if(v!=='' && v!=null) sp.set(k,v); });
+  return `/api/analytics/${path}?${sp.toString()}`;
+}
+async function fetchJson(url){ const r = await fetch(url); return r.json(); }
+
+function renderBar(elId, categories, values, title){
+  const source = new Bokeh.ColumnDataSource({data: {x: categories, y: values}});
+  const p = new Bokeh.Plotting.figure({title, x_range: categories, height: 350});
+  p.vbar({source, x: {field:'x'}, top: {field:'y'}, width: 0.8, fill_color: '#4e79a7'});
+  Bokeh.Plotting.show(p, q('#'+elId));
+}
+
+function renderPie(elId, labels, values, title){
+  const total = values.reduce((a,b)=>a+b,0) || 1;
+  const angles = values.map(v=> v/total * 2*Math.PI);
+  const colors = labels.map((_,i)=> Bokeh.Palettes.Category10[10][i%10]);
+  const source = new Bokeh.ColumnDataSource({data: {start: [0], end: [0]}});
+  const p = new Bokeh.Plotting.figure({title, height: 350});
+  let start = 0; const wedges = [];
+  for(let i=0;i<angles.length;i++){
+    const end = start + angles[i];
+    p.wedge({x:0, y:0, radius:1, start_angle:start, end_angle:end, fill_color:colors[i]});
+    start = end;
+  }
+  Bokeh.Plotting.show(p, q('#'+elId));
+  const legend = labels.map((l,i)=>`<div style=\"display:flex;align-items:center;gap:6px\"><span style=\"display:inline-block;width:12px;height:12px;background:${colors[i]}\"></span> ${l}</div>`).join('');
+  q('#b6_legend').innerHTML = legend;
+}
+
+function renderBox(elId, groups){
+  const cats = Object.keys(groups);
+  const p = new Bokeh.Plotting.figure({title:'Time to first claim (days) per policy type', x_range: cats, height: 350});
+  cats.forEach((k,idx)=>{
+    const xs = groups[k];
+    const x = idx+1;
+    const q1 = quantile(xs,0.25), q2 = quantile(xs,0.5), q3 = quantile(xs,0.75);
+    const iqr = q3-q1; const low = Math.max(Math.min(...xs), q1-1.5*iqr); const high = Math.min(Math.max(...xs), q3+1.5*iqr);
+    p.segment({x0:x, y0:low, x1:x, y1:high, line_color:'#000'});
+    p.vbar({x:x, width:0.7, top:q3, bottom:q1, fill_color:'#a0cbe8'});
+    p.segment({x0:x-0.35, y0:q2, x1:x+0.35, y1:q2, line_width:2, line_color:'#000'});
+  });
+  Bokeh.Plotting.show(p, q('#'+elId));
+}
+
+function quantile(arr, q){ if(!arr.length) return 0; const s=[...arr].sort((a,b)=>a-b); const pos=(s.length-1)*q; const base=Math.floor(pos); const rest=pos-base; return s[base+1]!==undefined ? s[base]+rest*(s[base+1]-s[base]) : s[base]; }
+
+async function render(){
+  q('#meta_info').textContent='';
+  const d1 = await fetchJson(buildUrl('payments-by-month'));
+  renderBar('b1', d1.data.map(r=>r.month+' / '+r.ptype), d1.data.map(r=>Number(r.total_amount)), 'Payments by month and policy type');
+
+  const d2 = await fetchJson(buildUrl('avg-claim-by-age-group'));
+  renderBar('b2', d2.data.map(r=>r.age_group), d2.data.map(r=>Number(r.avg_amount)), 'Average claim amount by age group');
+
+  const d3 = await fetchJson(buildUrl('claims-per-customer'));
+  renderBar('b3', d3.data.slice(0,20).map(r=>r.full_name || ('#'+r.id)), d3.data.slice(0,20).map(r=>Number(r.claims_count||0)), 'Claims per customer (top 20 by count)');
+
+  const d4 = await fetchJson(buildUrl('policy-profit-by-type'));
+  renderBar('b4', d4.data.map(r=>r.policy_type), d4.data.map(r=>Number(r.profit)), 'Policy profit by type');
+
+  const d5 = await fetchJson(buildUrl('time-to-claim'));
+  const groups = {};
+  for(const r of d5.data){ (groups[r.policy_type] ||= []).push(Number(r.days)); }
+  renderBox('b5', groups);
+
+  const d6 = await fetchJson(buildUrl('top-customers-by-payouts'));
+  renderPie('b6', d6.data.map(r=>r.full_name), d6.data.map(r=>Number(r.total_payout)), 'Top customers by payouts');
+
+  q('#meta_info').textContent = `Loaded: ${[d1,d2,d3,d4,d5,d6].map(x=>x.meta?.rows||0).reduce((a,b)=>a+b,0)} rows`;
+}
+
+q('#btn_apply').addEventListener('click', render);
+q('#btn_reset').addEventListener('click', ()=>{
+  ['#f_date_from','#f_date_to','#f_policy_type'].forEach(s=> q(s).value='');
+  q('#f_top_n').value=10; q('#f_threshold').value=0;
+  render();
+});
+
+render();
+</script>
+{% endblock %}
