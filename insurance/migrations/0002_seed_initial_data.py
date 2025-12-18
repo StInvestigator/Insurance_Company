@@ -96,6 +96,8 @@ def forward(apps, schema_editor):
     claims = []
     today = date.today()
     for i in range(COUNT_PER_TABLE):
+        if i % 3 != 0:
+            continue
         prow = policy_rows[i % len(policy_rows)]
         start = prow['start_date']
         end = prow['end_date'] or (start + timedelta(days=365))

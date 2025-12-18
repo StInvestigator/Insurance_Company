@@ -11,14 +11,6 @@ from ..repository.unit_of_work import UnitOfWork
 class AnalyticsView(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
-    @swagger_auto_schema(
-        method='get',
-        manual_parameters=[
-            openapi.Parameter('date_from', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='YYYY-MM-DD'),
-            openapi.Parameter('date_to', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='YYYY-MM-DD'),
-            openapi.Parameter('policy_type', openapi.IN_QUERY, type=openapi.TYPE_STRING)
-        ]
-    )
     @action(detail=False, methods=['get'], url_path='payments-by-month')
     def payments_by_month(self, request):
         date_from = request.query_params.get('date_from')
@@ -42,13 +34,7 @@ class AnalyticsView(viewsets.ViewSet):
             stats = {'total_amount': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
 
-    @swagger_auto_schema(
-        method='get',
-        manual_parameters=[
-            openapi.Parameter('date_from', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='YYYY-MM-DD'),
-            openapi.Parameter('date_to', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='YYYY-MM-DD'),
-        ]
-    )
+
     @action(detail=False, methods=['get'], url_path='avg-claim-by-age-group')
     def avg_claim_by_age_group(self, request):
         date_from = request.query_params.get('date_from')
@@ -77,12 +63,7 @@ class AnalyticsView(viewsets.ViewSet):
                      'count': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
 
-    @swagger_auto_schema(
-        method='get',
-        manual_parameters=[
-            openapi.Parameter('only_with_claims', openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN)
-        ]
-    )
+
     @action(detail=False, methods=['get'], url_path='claims-per-customer')
     def claims_per_customer(self, request):
         only_with_claims = request.query_params.get('only_with_claims', 'false').lower() in ('1', 'true', 'yes')
@@ -104,7 +85,7 @@ class AnalyticsView(viewsets.ViewSet):
             stats = {'claims_count': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
 
-    @swagger_auto_schema(method='get')
+
     @action(detail=False, methods=['get'], url_path='policy-profit-by-type')
     def policy_profit_by_type(self, request):
         date_from = request.query_params.get('date_from')
@@ -131,38 +112,35 @@ class AnalyticsView(viewsets.ViewSet):
             stats = {'profit': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
 
-    @swagger_auto_schema(method='get')
+
     @action(detail=False, methods=['get'], url_path='time-to-claim')
     def time_to_claim(self, request):
         with UnitOfWork() as repo:
             qs = repo.policies.time_to_first_claim_per_policy()
             data = list(qs)
-        df = pd.DataFrame(data)
-        if not df.empty:
-            df['days'] = df['delta'].apply(lambda d: d.days if pd.notnull(d) else None)
-            grouped = df.groupby('policy_type')['days']
-            stats = {
-                'days': {
-                    'mean': float(grouped.mean() if not grouped.size().empty else 0),
-                    'median': float(grouped.median() if not grouped.size().empty else 0),
-                    'min': float(grouped.min() if not grouped.size().empty else 0),
-                    'max': float(grouped.max() if not grouped.size().empty else 0),
+
+        try:
+            df = pd.DataFrame(data)
+            if not df.empty:
+                df['days'] = df['delta'].apply(lambda d: d.days if pd.notnull(d) else None)
+                stats = {
+                    'days': {
+                        'mean': float(df['days'].mean() if not df['days'].empty else 0),
+                        'median': float(df['days'].median() if not df['days'].empty else 0),
+                        'min': float(df['days'].min() if not df['days'].empty else 0),
+                        'max': float(df['days'].max() if not df['days'].empty else 0),
+                    }
                 }
-            }
-            df = df.drop(columns=['delta'])
-        else:
-            stats = {'days': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
+                df = df.drop(columns=['delta'])
+            else:
+                stats = {'days': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
+        except Exception as e:
+            print(e)
+
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
 
-    @swagger_auto_schema(
-        method='get',
-        manual_parameters=[
-            openapi.Parameter('limit', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, default=10),
-            openapi.Parameter('threshold', openapi.IN_QUERY, type=openapi.TYPE_NUMBER),
-            openapi.Parameter('date_from', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='YYYY-MM-DD'),
-            openapi.Parameter('date_to', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='YYYY-MM-DD'),
-        ]
-    )
+
+
     @action(detail=False, methods=['get'], url_path='top-customers-by-payouts')
     def top_customers_by_payouts(self, request):
         try:
