@@ -227,6 +227,7 @@ class AnalyticsDashboardV1View(TemplateView):
                 labels4 = pos['policy_type'].astype(str).tolist()
                 values4 = pos['profit'].astype(float).tolist()
                 fig4 = go.Figure(data=[go.Pie(labels=labels4, values=values4)])
+                fig4.update_layout(title='Policy profit by type')
             else:
                 fig4 = go.Figure(data=[go.Bar(x=agg['policy_type'].astype(str).tolist(), y=agg['profit'].astype(float).tolist())])
         else:
@@ -243,6 +244,7 @@ class AnalyticsDashboardV1View(TemplateView):
                     traces5.append(go.Box(name=str(ptype), y=ys))
         if traces5:
             fig5 = go.Figure(data=traces5)
+            fig5.update_layout(title='Time to first claim (days) per policy type')
         else:
             fig5 = go.Figure()
             fig5.update_layout(title='Time to first claim (days) per policy type (no data)')
@@ -261,6 +263,7 @@ class AnalyticsDashboardV1View(TemplateView):
                 x6 = df6.index.astype(str).tolist()
             y6 = pd.to_numeric(df6.get('total_payout', pd.Series([0]*len(x6))), errors='coerce').fillna(0.0).astype(float).tolist()
             fig6 = go.Figure(data=[go.Bar(x=x6, y=y6)])
+            fig6.update_layout(title='Top customers by payouts')
         else:
             fig6 = go.Figure()
             fig6.update_layout(title='Top customers by payouts (no data)')
