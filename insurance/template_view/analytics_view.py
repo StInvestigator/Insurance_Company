@@ -374,7 +374,7 @@ class AnalyticsDashboardV2View(TemplateView):
                     xs = [ptype] * len(ys)
                     src = ColumnDataSource(dict(x=xs, y=ys))
                     f5.scatter(x='x', y='y', size=6, alpha=0.6, source=src, legend_label=str(ptype))
-            f5.legend.title = 'Policy Type'
+            f5.legend.visible = False
             f5.xaxis.axis_label = 'Policy Type'
         else:
             f5 = figure(height=350, title='Time to first claim (days) per policy type')
