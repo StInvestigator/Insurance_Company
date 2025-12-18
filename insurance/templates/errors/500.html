@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Сторінку не знайдено (404){% endblock %}
+{% block title %}Internal server error (500){% endblock %}
 
 {% block content %}
   <div class="error-page">
-    <h1>500 — Що пішло не так на стороні сервера</h1>
-    <p>Skill cashew</p>
-    <a href="{% url 'policy_list' %}">На головну</a>
+    <h1>500 — Internal server error</h1>
+    <p>Something happened to out server :( </p>
+    <a href="{% url 'home' %}">Take me home</a>
 
   </div>
 {% endblock %}

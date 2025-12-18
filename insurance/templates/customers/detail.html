@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Customer{% endblock %}
+{% block content %}
+  <h1>Customer</h1>
+  {% if customer %}
+    <p><strong>ID:</strong> {{ customer.id }}</p>
+    <p><strong>Full name:</strong> {{ customer.full_name }}</p>
+    <p><strong>Tax number:</strong> {{ customer.tax_number }}</p>
+    <p><strong>Date of birth:</strong> {{ customer.date_of_birth }}</p>
+    <p><strong>Email:</strong> {{ customer.email }}</p>
+    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+    <p><strong>Address:</strong> {{ customer.address }}</p>
+    <p><strong>Created:</strong> {{ customer.created_at }}</p>
+    <p>
+      <a href="{% url 'claims_by_customer_list' customer.id %}">View claims</a> |
+      <a href="{% url 'customer_edit' customer.id %}">Edit</a> |
+      <a href="{% url 'customer_list' %}">Back to list</a>
+    </p>
+    <form method="post" action="{% url 'customer_delete' customer.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ customer.id }}">
+      <button type="submit" onclick="return confirm('Delete this customer?')">Delete</button>
+    </form>
+  {% else %}
+    <p>Customer not found</p>
+  {% endif %}
+{% endblock %}

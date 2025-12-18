@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Payments{% endblock %}
+{% block content %}
+  <h1>Payments</h1>
+  <p><a href="{% url 'payment_create' %}">Create new payment</a></p>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Amount</th>
+        <th>Date</th>
+        <th>Claim</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payments %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.amount }}</td>
+          <td>{{ p.date }}</td>
+          <td>{{ p.claim }}</td>
+          <td>{{ p.created_at }}</td>
+          <td>
+            <a href="{% url 'payment_detail' p.id %}">View</a> |
+            <a href="{% url 'payment_edit' p.id %}">Edit</a>
+            <form method="post" action="{% url 'payment_delete' p.id %}" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ p.id }}">
+              <button type="submit" onclick="return confirm('Delete this payment?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No payments yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if is_paginated %}
+  <div class="pagination">
+    <span class="step-links">
+      {% if page_obj.has_previous %}
+        <a href="?page=1">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      {% endif %}
+
+      <span class="current">
+        Page {{ page_obj.number }} of {{ paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        <a href="?page={{ paginator.num_pages }}">Last</a>
+      {% endif %}
+    </span>
+  </div>
+  {% endif %}
+{% endblock %}

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Сторінку не знайдено (404){% endblock %}
+{% block title %}Forbidden (403){% endblock %}
 
 {% block content %}
   <div class="error-page">
-    <h1>403 — Response frobidden</h1>
-    <p>You are lacking a permission</p>
-    <a href="{% url 'policy_list' %}">На головну</a>
+    <h1>403 — Forbidden</h1>
+    <p>You cant do that</p>
+    <a href="{% url 'home' %}">Take me home :(</a>
   </div>
 {% endblock %}

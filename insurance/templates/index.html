@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+  <h1>Welcome to Insurance Portal</h1>
+  <p>This is a simple demo UI that uses the REST API.</p>
+
+  <h2>Quick stats</h2>
+  <ul>
+    <li>Policies: {{ policies_count }}</li>
+    <li>Customers: {{ customers_count }}</li>
+    <li>Claims: {{ claims_count }}</li>
+    <li>Payments: {{ payments_count }}</li>
+  </ul>
+
+  <h2>Go to</h2>
+  <ul>
+    <li><a href="{% url 'policy_list' %}">Policies</a></li>
+    <li><a href="{% url 'customer_list' %}">Customers</a></li>
+    <li><a href="{% url 'claim_list' %}">Claims</a></li>
+    <li><a href="{% url 'payment_list' %}">Payments</a></li>
+  </ul>
+{% endblock %}

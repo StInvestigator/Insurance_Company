@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Payment{% endblock %}
+{% block content %}
+  <h1>Payment</h1>
+  {% if payment %}
+    <p><strong>ID:</strong> {{ payment.id }}</p>
+    <p><strong>Amount:</strong> {{ payment.amount }}</p>
+    <p><strong>Date:</strong> {{ payment.date }}</p>
+    <p><strong>Claim:</strong> {{ payment.claim }}</p>
+    <p><strong>Created:</strong> {{ payment.created_at }}</p>
+    <p>
+      <a href="{% url 'payment_edit' payment.id %}">Edit</a> |
+      <a href="{% url 'payment_list' %}">Back to list</a>
+    </p>
+    <form method="post" action="{% url 'payment_delete' payment.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ payment.id }}">
+      <button type="submit" onclick="return confirm('Delete this payment?')">Delete</button>
+    </form>
+  {% else %}
+    <p>Payment not found</p>
+  {% endif %}
+{% endblock %}
