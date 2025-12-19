@@ -330,6 +330,8 @@ class AnalyticsDashboardV2View(TemplateView):
         if not df1.empty:
             x1 = (df1.get('month', df1.index.astype(str)).astype(str) + ' / ' + df1.get('ptype', df1.get('policy_type', '')).astype(str)).tolist()
             y1 = pd.to_numeric(df1.get('total_amount', pd.Series([])), errors='coerce').fillna(0).astype(float).tolist()
+            x1 = x1[:32]
+            y1 = y1[:32]
         else:
             x1, y1 = [], []
         src1 = ColumnDataSource(dict(x=x1, y=y1))
@@ -337,6 +339,8 @@ class AnalyticsDashboardV2View(TemplateView):
             f1 = figure(x_range=x1, height=350, title='Payments by month and policy type')
         else:
             f1 = figure(height=350, title='Payments by month and policy type')
+            
+        f1.xaxis.major_label_orientation = "vertical"
         f1.vbar(x='x', top='y', source=src1, width=0.8)
         c1_script, c1_div = components(f1)
 
@@ -400,6 +404,8 @@ class AnalyticsDashboardV2View(TemplateView):
             f6 = figure(x_range=x6 if x6 else None, height=350, title='Top customers by payouts')
             if x6:
                 f6.vbar(x='x', top='y', source=src6, width=0.8)
+                f6.xaxis.major_label_orientation = "vertical"
+                
             else:
                 pass
         else:
