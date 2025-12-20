@@ -75,6 +75,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='insurancepolicy',
-            constraint=models.CheckConstraint(condition=models.Q(('end_date__isnull', True), ('end_date__gte', models.F('start_date')), _connector='OR'), name='insurance_policy_end_after_start'),
+            constraint=models.CheckConstraint(check=models.Q(('end_date__isnull', True), ('end_date__gte', models.F('start_date')), _connector='OR'), name='insurance_policy_end_after_start'),
         ),
     ]

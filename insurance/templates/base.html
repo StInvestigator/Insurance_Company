@@ -16,6 +16,7 @@
         <a href="{% url 'claim_list' %}">Claims</a>
         <a href="{% url 'analytics_dashboard_v1' %}">Analytics v1</a>
         <a href="{% url 'analytics_dashboard_v2' %}">Analytics v2</a>
+        <a href="{% url 'db_optimization_dashboard' %}">DB Optimization</a>
       </div>
       <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
         {% if request.session.jwt_access %}
