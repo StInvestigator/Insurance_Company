@@ -225,3 +225,14 @@ class AnalyticsView(viewsets.ViewSet):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=False, methods=['get'], url_path='counts')
+    def counts(self, request):
+        with UnitOfWork() as repo:
+            data = {
+                'policies_count': repo.policies.count(),
+                'customers_count': repo.customers.count(),
+                'claims_count': repo.claims.count(),
+                'payments_count': repo.payments.count(),
+            }
+        return Response(data)
