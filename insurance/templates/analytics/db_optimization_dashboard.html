@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Оптимізація доступу до БД{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Оптимізація доступу до бази даних</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Параметри експерименту</h5>
+        </div>
+        <div class="card-body">
+            <form id="optimizationForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="num_queries">Кількість запитів (100-200):</label>
+                            <input type="number" class="form-control" id="num_queries" value="150" min="100" max="200">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="num_workers">Кількість потоків/процесів (через кому):</label>
+                            <input type="text" class="form-control" id="num_workers" value="1,2,4,8,16" placeholder="1,2,4,8,16">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="batch_sizes">Розміри пакетів (через кому):</label>
+                            <input type="text" class="form-control" id="batch_sizes" value="10,25,50,100" placeholder="10,25,50,100">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Тип виконання:</label><br>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="test_threads" checked>
+                                <label class="form-check-label" for="test_threads">Потоки</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="test_processes">
+                                <label class="form-check-label" for="test_processes">Процеси</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="runBtn">Запустити експеримент</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="loadingIndicator" class="alert alert-info" style="display: none;">
+        <strong>Виконується експеримент...</strong> Це може зайняти кілька хвилин.
+    </div>
+    
+    <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+    
+    <div id="resultsSection" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Оптимальна конфігурація</h5>
+            </div>
+            <div class="card-body">
+                <div id="optimalConfig"></div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Залежність часу виконання від кількості потоків/процесів</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="timeByWorkersChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Теплова карта: Час виконання залежно від параметрів</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="heatmapChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Використання CPU</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="cpuChart"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Використання пам'яті</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="memoryChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Детальні результати</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Потоки/Процеси</th>
+                                <th>Розмір пакету</th>
+                                <th>Тип</th>
+                                <th>Загальний час (с)</th>
+                                <th>Середній час на запит (мс)</th>
+                                <th>Успішних</th>
+                                <th>Помилок</th>
+                                <th>CPU (%)</th>
+                                <th>Пам'ять (MB)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+document.getElementById('optimizationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const numQueries = parseInt(document.getElementById('num_queries').value);
+    const numWorkersStr = document.getElementById('num_workers').value;
+    const batchSizesStr = document.getElementById('batch_sizes').value;
+    const testThreads = document.getElementById('test_threads').checked;
+    const testProcesses = document.getElementById('test_processes').checked;
+    
+    const numWorkers = numWorkersStr.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+    const batchSizes = batchSizesStr.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+    
+    const data = {
+        num_queries: numQueries,
+        num_workers_range: numWorkers,
+        batch_sizes: batchSizes,
+        test_threads: testThreads,
+        test_processes: testProcesses
+    };
+    
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('errorAlert').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('runBtn').disabled = true;
+    
+    try {
+        // Отримуємо CSRF токен
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+        
+        const response = await fetch('/analytics/db-optimization/run/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayResults(result);
+        } else {
+            showError(result.error || 'Помилка при виконанні експерименту');
+        }
+    } catch (error) {
+        showError('Помилка: ' + error.message);
+    } finally {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('runBtn').disabled = false;
+    }
+});
+
+function showError(message) {
+    const errorAlert = document.getElementById('errorAlert');
+    errorAlert.textContent = message;
+    errorAlert.style.display = 'block';
+}
+
+function displayResults(data) {
+    document.getElementById('resultsSection').style.display = 'block';
+    
+    // Оптимальна конфігурація
+    const optimalConfig = data.optimal_config || {};
+    const configHtml = `
+        <p><strong>Кількість потоків/процесів:</strong> ${optimalConfig.num_workers || 'N/A'}</p>
+        <p><strong>Розмір пакету:</strong> ${optimalConfig.batch_size || 'N/A'}</p>
+        <p><strong>Тип:</strong> ${optimalConfig.use_processes ? 'Процеси' : 'Потоки'}</p>
+        <p><strong>Загальний час виконання:</strong> ${(optimalConfig.total_time || 0).toFixed(3)} секунд</p>
+    `;
+    document.getElementById('optimalConfig').innerHTML = configHtml;
+    
+    // Графік залежності часу від кількості потоків
+    const avgTimeByWorkers = data.avg_time_by_workers || {};
+    const workers = Object.keys(avgTimeByWorkers).map(Number).sort((a, b) => a - b);
+    const times = workers.map(w => avgTimeByWorkers[w]);
+    
+    const timeChart = {
+        x: workers,
+        y: times,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Середній час виконання',
+        line: { color: 'blue', width: 2 },
+        marker: { size: 8 }
+    };
+    
+    Plotly.newPlot('timeByWorkersChart', [timeChart], {
+        title: 'Залежність часу виконання від кількості потоків/процесів',
+        xaxis: { title: 'Кількість потоків/процесів' },
+        yaxis: { title: 'Час виконання (секунди)' },
+        margin: { t: 40 }
+    });
+    
+    // Теплова карта
+    const allResults = data.all_results || [];
+    const sortedResults = [...allResults].sort((a, b) => {
+        if (a.num_workers !== b.num_workers) return a.num_workers - b.num_workers;
+        if (a.batch_size !== b.batch_size) return a.batch_size - b.batch_size;
+        return (a.use_processes ? 1 : 0) - (b.use_processes ? 1 : 0);
+    });
+
+    if (sortedResults.length > 0) {
+        // Групуємо за кількістю потоків та розміром пакету
+        const workersSet = new Set();
+        const batchSizesSet = new Set();
+        const heatmapData = {};
+        
+        sortedResults.forEach(r => {
+            workersSet.add(r.num_workers);
+            batchSizesSet.add(r.batch_size);
+            const key = `${r.num_workers}_${r.batch_size}`;
+            if (!heatmapData[key] || heatmapData[key].total_time > r.total_time) {
+                heatmapData[key] = r;
+            }
+        });
+        
+        const workersSorted = Array.from(workersSet).map(Number).sort((a, b) => a - b);
+        const batchSizesSorted = Array.from(batchSizesSet).map(Number).sort((a, b) => a - b);
+        
+        const z = batchSizesSorted.map(bs => 
+            workersSorted.map(w => {
+                const key = `${w}_${bs}`;
+                return heatmapData[key] ? heatmapData[key].total_time : null;
+            })
+        );
+        
+        const heatmap = {
+            x: workersSorted.map(String),
+            y: batchSizesSorted.map(String),
+            z: z,
+            type: 'heatmap',
+            colorscale: 'Viridis',
+            colorbar: { title: 'Час (сек)' }
+        };
+        
+        Plotly.newPlot('heatmapChart', [heatmap], {
+            title: 'Теплова карта: Час виконання залежно від параметрів',
+            xaxis: { title: 'Кількість потоків/процесів' },
+            yaxis: { title: 'Розмір пакету' },
+            margin: { t: 40 }
+        });
+        
+        // Графіки CPU та пам'яті
+        const cpuData = sortedResults.map(r => ({
+            x: r.num_workers,
+            y: r.cpu_usage_percent,
+            type: r.use_processes ? 'Процеси' : 'Потоки',
+            batch_size: r.batch_size
+        }));
+        
+        const cpuByWorkers = {};
+        cpuData.forEach(d => {
+            if (!cpuByWorkers[d.x]) cpuByWorkers[d.x] = [];
+            cpuByWorkers[d.x].push(d.y);
+        });
+        
+        const cpuChartData = Object.keys(cpuByWorkers).map(w => ({
+            x: [w],
+            y: [cpuByWorkers[w].reduce((a, b) => a + b, 0) / cpuByWorkers[w].length],
+            type: 'bar',
+            name: `${w} потоків/процесів`
+        }));
+        
+        Plotly.newPlot('cpuChart', cpuChartData, {
+            title: 'Використання CPU',
+            xaxis: { title: 'Кількість потоків/процесів' },
+            yaxis: { title: 'CPU (%)' },
+            margin: { t: 40 }
+        });
+        
+        const memoryByWorkers = {};
+        sortedResults.forEach(r => {
+            if (!memoryByWorkers[r.num_workers]) memoryByWorkers[r.num_workers] = [];
+            memoryByWorkers[r.num_workers].push(r.memory_usage_mb);
+        });
+        
+        const memoryChartData = Object.keys(memoryByWorkers).map(w => ({
+            x: [w],
+            y: [memoryByWorkers[w].reduce((a, b) => a + b, 0) / memoryByWorkers[w].length],
+            type: 'bar',
+            name: `${w} потоків/процесів`
+        }));
+        
+        Plotly.newPlot('memoryChart', memoryChartData, {
+            title: 'Використання пам\'яті',
+            xaxis: { title: 'Кількість потоків/процесів' },
+            yaxis: { title: 'Пам\'ять (MB)' },
+            margin: { t: 40 }
+        });
+    }
+    
+    // Таблиця результатів
+    const tableBody = document.getElementById('resultsTableBody');
+    tableBody.innerHTML = '';
+
+    if (sortedResults.length === 0) {
+        const row = tableBody.insertRow();
+        const cell = row.insertCell(0);
+        cell.colSpan = 9;
+        cell.textContent = 'Немає даних (перевірте параметри або статус відповіді API)';
+        return;
+    }
+
+    sortedResults.forEach(r => {
+        const row = tableBody.insertRow();
+        row.insertCell(0).textContent = r.num_workers;
+        row.insertCell(1).textContent = r.batch_size;
+        row.insertCell(2).textContent = r.use_processes ? 'Процеси' : 'Потоки';
+        row.insertCell(3).textContent = r.total_time.toFixed(3);
+        row.insertCell(4).textContent = (r.avg_time_per_query * 1000).toFixed(2);
+        row.insertCell(5).textContent = r.success_count;
+        row.insertCell(6).textContent = r.error_count;
+        row.insertCell(7).textContent = r.cpu_usage_percent.toFixed(2);
+        row.insertCell(8).textContent = r.memory_usage_mb.toFixed(2);
+    });
+}
+</script>
+{% endblock %}
+

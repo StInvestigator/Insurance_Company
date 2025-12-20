@@ -6,6 +6,7 @@ from drf_yasg import openapi
 import pandas as pd
 
 from ..repository.unit_of_work import UnitOfWork
+from ..parallel_db.optimizer import DatabaseOptimizer
 
 
 class AnalyticsView(viewsets.ViewSet):
@@ -173,3 +174,65 @@ class AnalyticsView(viewsets.ViewSet):
         else:
             stats = {'total_payout': {'mean': 0, 'median': 0, 'min': 0, 'max': 0}}
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
+
+    @action(detail=False, methods=['post'], url_path='db-optimization')
+    @swagger_auto_schema(
+        operation_description="Запускає експерименти для пошуку оптимальних параметрів доступу до БД",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'num_queries': openapi.Schema(type=openapi.TYPE_INTEGER, description='Кількість запитів (100-200)', default=150),
+                'num_workers_range': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='Список кількостей потоків/процесів', default=[1, 2, 4, 8, 16]),
+                'batch_sizes': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='Список розмірів пакетів', default=[10, 25, 50, 100]),
+                'test_threads': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Тестувати багатопотоковість', default=True),
+                'test_processes': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Тестувати багатопроцесність', default=False),
+            }
+        ),
+        responses={200: openapi.Response('Результати експериментів')}
+    )
+    def db_optimization(self, request):
+        try:
+            num_queries = int(request.data.get('num_queries', 150))
+            num_queries = max(100, min(200, num_queries))
+            
+            num_workers_range = request.data.get('num_workers_range', [1, 2, 4, 8, 16])
+            batch_sizes = request.data.get('batch_sizes', [10, 25, 50, 100])
+            test_threads = request.data.get('test_threads', True)
+            test_processes = request.data.get('test_processes', False)
+            
+            optimizer = DatabaseOptimizer(num_queries=num_queries)
+            results = optimizer.run_experiments(
+                num_workers_range=num_workers_range,
+                batch_sizes=batch_sizes,
+                test_threads=test_threads,
+                test_processes=test_processes
+            )
+            
+            optimal_config = optimizer.find_optimal_config(results)
+            
+            return Response({
+                'optimal_config': optimal_config.get('optimal_config', {}),
+                'all_results': optimal_config.get('all_results', []),
+                'avg_time_by_workers': optimal_config.get('avg_time_by_workers', {}),
+                'best_result': optimal_config.get('best_result', {}),
+                'meta': {
+                    'total_experiments': len(results),
+                    'num_queries': num_queries,
+                }
+            })
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'], url_path='counts')
+    def counts(self, request):
+        with UnitOfWork() as repo:
+            data = {
+                'policies_count': repo.policies.count(),
+                'customers_count': repo.customers.count(),
+                'claims_count': repo.claims.count(),
+                'payments_count': repo.payments.count(),
+            }
+        return Response(data)

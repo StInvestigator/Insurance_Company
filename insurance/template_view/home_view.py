@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.views.generic import TemplateView
 
 API_ROOT = "http://localhost:8000/api"
@@ -15,27 +16,34 @@ class HomeView(TemplateView):
             return {'Authorization': f'Bearer {access}'}
         return {}
 
+    def _fetch_count(self, key, path):
+        try:
+            r = requests.get(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=self._auth_headers())
+            if r.status_code == 200 and isinstance(r.json(), dict):
+                return key, int(r.json().get('count', '0'))
+        except requests.RequestException:
+            pass
+        return key, 0
+
     def get_counts(self):
-        counts = {
+        try:
+            r = requests.get(f"{API_ROOT}/analytics/counts/", timeout=TIMEOUT, headers=self._auth_headers())
+            if r.status_code == 200 and isinstance(r.json(), dict):
+                data = r.json()
+                return {
+                    'policies_count': int(data.get('policies_count', 0)),
+                    'customers_count': int(data.get('customers_count', 0)),
+                    'claims_count': int(data.get('claims_count', 0)),
+                    'payments_count': int(data.get('payments_count', 0)),
+                }
+        except requests.RequestException:
+            pass
+        return {
             'policies_count': 0,
             'customers_count': 0,
             'claims_count': 0,
             'payments_count': 0,
         }
-        endpoints = {
-            'policies_count': '/policies/count/',
-            'customers_count': '/customers/count/',
-            'claims_count': '/claims/count/',
-            'payments_count': '/payments/count/',
-        }
-        for key, path in endpoints.items():
-            try:
-                r = requests.get(f"{API_ROOT}{path}", timeout=TIMEOUT, headers=self._auth_headers())
-                if r.status_code == 200 and isinstance(r.json(), dict):
-                    counts[key] = int(r.json().get('count', '0'))
-            except requests.RequestException:
-                pass
-        return counts
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

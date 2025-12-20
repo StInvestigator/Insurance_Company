@@ -1,12 +1,11 @@
-from datetime import date
-from typing import Any, Dict
+from datetime import date, timedelta
+from typing import Any, Dict, List
 import logging
 import math
 import requests
 from urllib.parse import urljoin
+from collections import Counter, defaultdict
 
-import pandas as pd
-import numpy as np
 from django.views.generic import TemplateView
 
 # Plotly imports (for V1)
@@ -50,21 +49,15 @@ def _parse_params(request) -> Dict[str, Any]:
         'threshold': threshold,
     }
 
-def _to_df_from_api(obj) -> pd.DataFrame:
-    """Converts API response 'data' (list/dict/iterable) to DataFrame safely."""
+def _to_list_from_api(obj) -> List[Dict]:
     if obj is None:
-        return pd.DataFrame([])
-    if isinstance(obj, pd.DataFrame):
-        return obj
+        return []
     if isinstance(obj, list):
-        try:
-            return pd.DataFrame(obj)
-        except Exception:
-            return pd.DataFrame([])
+        return obj
     try:
-        return pd.DataFrame(list(obj))
+        return list(obj)
     except Exception:
-        return pd.DataFrame([])
+        return []
 
 def _days_from_timedelta_str(s: str | None) -> float | None:
     if not s:
@@ -80,17 +73,16 @@ def _timedelta_to_days(val) -> float | None:
     if val is None:
         return None
     try:
-        if pd.notnull(val):
-            if hasattr(val, "days") and hasattr(val, "seconds"):
-                return float(val.days + val.seconds / 86400.0)
-            if isinstance(val, (pd.Timedelta,)):
-                return float(val.days + val.seconds / 86400.0)
-            if isinstance(val, str) and 'day' in val:
-                return float(val.split('day')[0].strip().replace(',', ''))
-            try:
-                return float(val)
-            except Exception:
-                return None
+        if hasattr(val, "days") and hasattr(val, "seconds"):
+            return float(val.days + val.seconds / 86400.0)
+        if isinstance(val, timedelta):
+            return float(val.days + val.seconds / 86400.0)
+        if isinstance(val, str) and 'day' in val:
+            return float(val.split('day')[0].strip().replace(',', ''))
+        try:
+            return float(val)
+        except Exception:
+            return None
     except Exception:
         pass
     return None
@@ -163,27 +155,29 @@ class AnalyticsDashboardV1View(TemplateView):
             'date_to': p['date_to']
         }) or {}
 
-        df1 = _to_df_from_api(r1.get('data') if isinstance(r1, dict) else r1)
-        df2 = _to_df_from_api(r2.get('data') if isinstance(r2, dict) else r2)
-        df3 = _to_df_from_api(r3.get('data') if isinstance(r3, dict) else r3)
-        df4 = _to_df_from_api(r4.get('data') if isinstance(r4, dict) else r4)
-        df5 = _to_df_from_api(r5.get('data') if isinstance(r5, dict) else r5)
-        df6 = _to_df_from_api(r6.get('data') if isinstance(r6, dict) else r6)
+        data1 = _to_list_from_api(r1.get('data') if isinstance(r1, dict) else r1)
+        data2 = _to_list_from_api(r2.get('data') if isinstance(r2, dict) else r2)
+        data3 = _to_list_from_api(r3.get('data') if isinstance(r3, dict) else r3)
+        data4 = _to_list_from_api(r4.get('data') if isinstance(r4, dict) else r4)
+        data5 = _to_list_from_api(r5.get('data') if isinstance(r5, dict) else r5)
+        data6 = _to_list_from_api(r6.get('data') if isinstance(r6, dict) else r6)
 
-        if not df5.empty and 'delta' in df5.columns:
-            df5['days'] = df5['delta'].apply(lambda d: _timedelta_to_days(d))
+        for item in data5:
+            if 'delta' in item:
+                item['days'] = _timedelta_to_days(item['delta'])
 
         def _to_plotly_html(fig):
             return pio.to_html(fig, include_plotlyjs=False, full_html=False)
 
         # 1) Payments by month and policy type (bar)
-        if not df1.empty:
-            month_col = 'month' if 'month' in df1.columns else (df1.columns[0] if len(df1.columns) else '')
-            ptype_col = 'ptype' if 'ptype' in df1.columns else ('policy_type' if 'policy_type' in df1.columns else None)
-            month_series = df1.get(month_col, pd.Series([], dtype=object)).astype(str)
-            ptype_series = df1[ptype_col].astype(str) if ptype_col and ptype_col in df1.columns else pd.Series([''] * len(month_series))
-            x = (month_series + ' / ' + ptype_series).tolist()
-            y = df1.get('total_amount', pd.Series([0] * len(x))).astype(float).tolist() if len(x) else []
+        if data1:
+            x = []
+            y = []
+            for item in data1:
+                month = str(item.get('month', item.get('ptype', '')))
+                ptype = str(item.get('ptype', item.get('policy_type', '')))
+                x.append(f"{month} / {ptype}")
+                y.append(float(item.get('total_amount', 0)))
         else:
             x, y = [], []
         fig1 = go.Figure(data=[go.Bar(x=x, y=y)]) if x else go.Figure()
@@ -191,8 +185,10 @@ class AnalyticsDashboardV1View(TemplateView):
         c1_html = _to_plotly_html(fig1)
 
         # 2) Avg claim by age group
-        if not df2.empty and 'age_group' in df2.columns and 'avg_amount' in df2.columns:
-            fig2 = go.Figure(data=[go.Bar(x=df2['age_group'].astype(str).tolist(), y=df2['avg_amount'].astype(float).tolist())])
+        if data2:
+            x2 = [str(item.get('age_group', '')) for item in data2]
+            y2 = [float(item.get('avg_amount', 0)) for item in data2]
+            fig2 = go.Figure(data=[go.Bar(x=x2, y=y2)])
         else:
             fig2 = go.Figure()
             fig2.update_layout(title='Average claim amount by age group (no data)')
@@ -200,13 +196,20 @@ class AnalyticsDashboardV1View(TemplateView):
         c2_html = _to_plotly_html(fig2)
 
         # 3) Claims per customer distribution -> use Bar if discrete 0/1 or few unique values
-        if not df3.empty and 'claims_count' in df3.columns:
-            df3['claims_count'] = pd.to_numeric(df3['claims_count'], errors='coerce').fillna(0).astype(int)
-            vals = df3['claims_count'].tolist()
+        if data3:
+            vals = []
+            for item in data3:
+                try:
+                    val = int(item.get('claims_count', 0) or 0)
+                    vals.append(val)
+                except (ValueError, TypeError):
+                    vals.append(0)
             uniq = sorted(set(vals))
             if len(uniq) <= 6:
-                counts = df3['claims_count'].value_counts().sort_index()
-                fig3 = go.Figure(data=[go.Bar(x=list(counts.index.astype(int)), y=counts.to_list())])
+                counts = Counter(vals)
+                x3 = sorted(counts.keys())
+                y3 = [counts[k] for k in x3]
+                fig3 = go.Figure(data=[go.Bar(x=x3, y=y3)])
                 fig3.update_layout(title='Claims per customer (counts)', xaxis_title='Number of claims', yaxis_title='Customers')
             else:
                 nbins = min(50, max(1, int(math.sqrt(len(vals)))))
@@ -218,18 +221,25 @@ class AnalyticsDashboardV1View(TemplateView):
         c3_html = _to_plotly_html(fig3)
 
         # 4) Policy profit by type (pie fallback to bar)
-        if not df4.empty and 'policy_type' in df4.columns and 'profit' in df4.columns:
-            df4_local = df4.copy()
-            df4_local['profit'] = pd.to_numeric(df4_local['profit'], errors='coerce').fillna(0.0).astype(float)
-            agg = df4_local.groupby('policy_type', as_index=False)['profit'].sum()
-            pos = agg[agg['profit'] > 0]
-            if not pos.empty:
-                labels4 = pos['policy_type'].astype(str).tolist()
-                values4 = pos['profit'].astype(float).tolist()
+        if data4:
+            profit_by_type = defaultdict(float)
+            for item in data4:
+                ptype = item.get('policy_type', '')
+                try:
+                    profit = float(item.get('profit', 0) or 0)
+                    profit_by_type[ptype] += profit
+                except (ValueError, TypeError):
+                    pass
+            pos = {k: v for k, v in profit_by_type.items() if v > 0}
+            if pos:
+                labels4 = list(pos.keys())
+                values4 = list(pos.values())
                 fig4 = go.Figure(data=[go.Pie(labels=labels4, values=values4)])
                 fig4.update_layout(title='Policy profit by type')
             else:
-                fig4 = go.Figure(data=[go.Bar(x=agg['policy_type'].astype(str).tolist(), y=agg['profit'].astype(float).tolist())])
+                labels4 = list(profit_by_type.keys())
+                values4 = list(profit_by_type.values())
+                fig4 = go.Figure(data=[go.Bar(x=labels4, y=values4)])
         else:
             fig4 = go.Figure()
             fig4.update_layout(title='Policy profit by type (no data)')
@@ -237,9 +247,17 @@ class AnalyticsDashboardV1View(TemplateView):
 
         # 5) Time to first claim per policy type
         traces5 = []
-        if not df5.empty and 'policy_type' in df5.columns and 'days' in df5.columns:
-            for ptype, grp in df5.groupby('policy_type'):
-                ys = grp['days'].dropna().astype(float).tolist()
+        if data5:
+            by_type = defaultdict(list)
+            for item in data5:
+                ptype = item.get('policy_type')
+                days = item.get('days')
+                if ptype is not None and days is not None:
+                    try:
+                        by_type[ptype].append(float(days))
+                    except (ValueError, TypeError):
+                        pass
+            for ptype, ys in by_type.items():
                 if ys:
                     traces5.append(go.Box(name=str(ptype), y=ys))
         if traces5:
@@ -251,17 +269,19 @@ class AnalyticsDashboardV1View(TemplateView):
         c5_html = _to_plotly_html(fig5)
 
         # 6) Top customers by payouts
-        if not df6.empty:
-            name_col = None
-            for candidate in ['claim__policy__customer__full_name', 'full_name', 'customer__full_name']:
-                if candidate in df6.columns:
-                    name_col = candidate
-                    break
-            if name_col:
-                x6 = df6[name_col].astype(str).tolist()
-            else:
-                x6 = df6.index.astype(str).tolist()
-            y6 = pd.to_numeric(df6.get('total_payout', pd.Series([0]*len(x6))), errors='coerce').fillna(0.0).astype(float).tolist()
+        if data6:
+            x6 = []
+            y6 = []
+            for item in data6:
+                name = (item.get('claim__policy__customer__full_name') or 
+                       item.get('full_name') or 
+                       item.get('customer__full_name') or 
+                       '')
+                x6.append(str(name))
+                try:
+                    y6.append(float(item.get('total_payout', 0) or 0))
+                except (ValueError, TypeError):
+                    y6.append(0.0)
             fig6 = go.Figure(data=[go.Bar(x=x6, y=y6)])
             fig6.update_layout(title='Top customers by payouts')
         else:
@@ -315,23 +335,29 @@ class AnalyticsDashboardV2View(TemplateView):
             'date_to': p['date_to']
         }) or {}
 
-        df1 = _to_df_from_api(r1.get('data') if isinstance(r1, dict) else r1)
-        df2 = _to_df_from_api(r2.get('data') if isinstance(r2, dict) else r2)
-        df3 = _to_df_from_api(r3.get('data') if isinstance(r3, dict) else r3)
-        df4 = _to_df_from_api(r4.get('data') if isinstance(r4, dict) else r4)
-        df5 = _to_df_from_api(r5.get('data') if isinstance(r5, dict) else r5)
-        df6 = _to_df_from_api(r6.get('data') if isinstance(r6, dict) else r6)
+        data1 = _to_list_from_api(r1.get('data') if isinstance(r1, dict) else r1)
+        data2 = _to_list_from_api(r2.get('data') if isinstance(r2, dict) else r2)
+        data3 = _to_list_from_api(r3.get('data') if isinstance(r3, dict) else r3)
+        data4 = _to_list_from_api(r4.get('data') if isinstance(r4, dict) else r4)
+        data5 = _to_list_from_api(r5.get('data') if isinstance(r5, dict) else r5)
+        data6 = _to_list_from_api(r6.get('data') if isinstance(r6, dict) else r6)
 
-        # parse df5 delta -> days
-        if not df5.empty and 'delta' in df5.columns:
-            df5['days'] = df5['delta'].apply(lambda d: _timedelta_to_days(d))
+        for item in data5:
+            if 'delta' in item:
+                item['days'] = _timedelta_to_days(item['delta'])
 
         # 1) Payments by month and policy type
-        if not df1.empty:
-            x1 = (df1.get('month', df1.index.astype(str)).astype(str) + ' / ' + df1.get('ptype', df1.get('policy_type', '')).astype(str)).tolist()
-            y1 = pd.to_numeric(df1.get('total_amount', pd.Series([])), errors='coerce').fillna(0).astype(float).tolist()
-            x1 = x1[:32]
-            y1 = y1[:32]
+        if data1:
+            x1 = []
+            y1 = []
+            for item in data1[:32]:
+                month = str(item.get('month', ''))
+                ptype = str(item.get('ptype', item.get('policy_type', '')))
+                x1.append(f"{month} / {ptype}")
+                try:
+                    y1.append(float(item.get('total_amount', 0) or 0))
+                except (ValueError, TypeError):
+                    y1.append(0.0)
         else:
             x1, y1 = [], []
         src1 = ColumnDataSource(dict(x=x1, y=y1))
@@ -345,8 +371,14 @@ class AnalyticsDashboardV2View(TemplateView):
         c1_script, c1_div = components(f1)
 
         # 2) Avg claim by age group
-        x2 = df2.get('age_group', pd.Series([], dtype=object)).tolist() if not df2.empty else []
-        y2 = pd.to_numeric(df2.get('avg_amount', pd.Series([])), errors='coerce').fillna(0).astype(float).tolist() if not df2.empty else []
+        x2 = [str(item.get('age_group', '')) for item in data2] if data2 else []
+        y2 = []
+        if data2:
+            for item in data2:
+                try:
+                    y2.append(float(item.get('avg_amount', 0) or 0))
+                except (ValueError, TypeError):
+                    y2.append(0.0)
         src2 = ColumnDataSource(dict(x=x2, y=y2))
         if x2:
             f2 = figure(x_range=x2, height=350, title='Average claim amount by age group')
@@ -356,58 +388,94 @@ class AnalyticsDashboardV2View(TemplateView):
         c2_script, c2_div = components(f2)
 
         # 3) Claims per customer (bar for discrete)
-        x3 = df3['claims_count'].fillna(0).astype(int).tolist() if not df3.empty else []
-        hist, edges = np.histogram(x3, bins=min(10, max(1, len(set(x3)) or 1))) if x3 else ([], [0, 1])
-        src3 = ColumnDataSource(dict(top=hist.tolist() if len(hist) else [], left=edges[:-1].tolist() if len(edges)>1 else [0], right=edges[1:].tolist() if len(edges)>1 else [1]))
+        x3 = []
+        if data3:
+            for item in data3:
+                try:
+                    x3.append(int(item.get('claims_count', 0) or 0))
+                except (ValueError, TypeError):
+                    x3.append(0)
+        
+        if x3:
+            bins = min(10, max(1, len(set(x3)) or 1))
+            min_val, max_val = min(x3), max(x3)
+            if min_val == max_val:
+                hist, edges = [len(x3)], [min_val, max_val + 1]
+            else:
+                bin_width = (max_val - min_val) / bins
+                edges = [min_val + i * bin_width for i in range(bins + 1)]
+                hist = [0] * bins
+                for val in x3:
+                    idx = min(int((val - min_val) / bin_width), bins - 1)
+                    hist[idx] += 1
+        else:
+            hist, edges = [], [0, 1]
+        src3 = ColumnDataSource(dict(top=hist if len(hist) else [], left=edges[:-1] if len(edges)>1 else [0], right=edges[1:] if len(edges)>1 else [1]))
         f3 = figure(height=350, title='Claims per customer distribution')
         f3.quad(top='top', bottom=0, left='left', right='right', source=src3)
         c3_script, c3_div = components(f3)
 
         # 4) Policy profit by type -> pie (wedge) or placeholder
-        x4 = df4['policy_type'].tolist() if not df4.empty else []
-        y4 = df4['profit'].astype(float).tolist() if not df4.empty else []
+        x4 = [str(item.get('policy_type', '')) for item in data4] if data4 else []
+        y4 = []
+        if data4:
+            for item in data4:
+                try:
+                    y4.append(float(item.get('profit', 0) or 0))
+                except (ValueError, TypeError):
+                    y4.append(0.0)
         src4 = ColumnDataSource(dict(x=x4, y=y4))
         f4 = figure(x_range=x4, height=350, title='Policy profit by type')
         f4.vbar(x='x', top='y', source=src4, width=0.8)
         c4_script, c4_div = components(f4)
 
         # 5) Time to first claim (scatter per type)
-        if not df5.empty and 'policy_type' in df5.columns and 'days' in df5.columns:
-            policy_types = sorted(df5['policy_type'].dropna().unique().tolist())
-            f5 = figure(height=350, title='Time to first claim (days) per policy type', x_range=policy_types, y_axis_label='Days')
-            for ptype, grp in df5.groupby('policy_type'):
-                ys = grp['days'].dropna().astype(float).tolist()
-                if ys:
-                    xs = [ptype] * len(ys)
-                    src = ColumnDataSource(dict(x=xs, y=ys))
-                    f5.scatter(x='x', y='y', size=6, alpha=0.6, source=src, legend_label=str(ptype))
-            f5.legend.visible = False
-            f5.xaxis.axis_label = 'Policy Type'
+        if data5:
+            by_type = defaultdict(list)
+            for item in data5:
+                ptype = item.get('policy_type')
+                days = item.get('days')
+                if ptype is not None and days is not None:
+                    try:
+                        by_type[ptype].append(float(days))
+                    except (ValueError, TypeError):
+                        pass
+            policy_types = sorted(by_type.keys())
+            if policy_types:
+                f5 = figure(height=350, title='Time to first claim (days) per policy type', x_range=policy_types, y_axis_label='Days')
+                for ptype in policy_types:
+                    ys = by_type[ptype]
+                    if ys:
+                        xs = [ptype] * len(ys)
+                        src = ColumnDataSource(dict(x=xs, y=ys))
+                        f5.scatter(x='x', y='y', size=6, alpha=0.6, source=src, legend_label=str(ptype))
+                f5.legend.visible = False
+                f5.xaxis.axis_label = 'Policy Type'
+            else:
+                f5 = figure(height=350, title='Time to first claim (days) per policy type')
         else:
             f5 = figure(height=350, title='Time to first claim (days) per policy type')
         c5_script, c5_div = components(f5)
 
         # 6) Top customers by payouts
-        if not df6.empty:
-            # normalize name field
-            name_col = None
-            for candidate in ['claim__policy__customer__full_name', 'full_name', 'customer__full_name']:
-                if candidate in df6.columns:
-                    name_col = candidate
-                    break
-            if name_col:
-                x6 = df6[name_col].astype(str).tolist()
-            else:
-                x6 = df6.index.astype(str).tolist()
-            y6 = pd.to_numeric(df6.get('total_payout', pd.Series([0]*len(x6))), errors='coerce').fillna(0.0).astype(float).tolist()
+        if data6:
+            x6 = []
+            y6 = []
+            for item in data6:
+                name = (item.get('claim__policy__customer__full_name') or 
+                       item.get('full_name') or 
+                       item.get('customer__full_name') or 
+                       '')
+                x6.append(str(name))
+                try:
+                    y6.append(float(item.get('total_payout', 0) or 0))
+                except (ValueError, TypeError):
+                    y6.append(0.0)
             src6 = ColumnDataSource(dict(x=x6, y=y6))
             f6 = figure(x_range=x6 if x6 else None, height=350, title='Top customers by payouts')
             if x6:
                 f6.vbar(x='x', top='y', source=src6, width=0.8)
                 f6.xaxis.major_label_orientation = "vertical"
-                
-            else:
-                pass
         else:
             f6 = figure(height=350, title='Top customers by payouts')
         c6_script, c6_div = components(f6)
