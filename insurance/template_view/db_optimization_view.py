@@ -1,39 +1,29 @@
+# db_optimization_view.py
 from django.views.generic import TemplateView
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-import json
-import requests
-from urllib.parse import urljoin
-
+from insurance.parallel_db.optimizer import DatabaseOptimizer
 
 class DatabaseOptimizationDashboardView(TemplateView):
     template_name = 'analytics/db_optimization_dashboard.html'
-    
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        return ctx
 
+    def post(self, request, *args, **kwargs):
+        num_queries = int(request.POST.get("num_queries", 150))
+        num_workers = list(map(int, request.POST.get("num_workers", "1,2,4,8").split(",")))
+        batch_sizes = list(map(int, request.POST.get("batch_sizes", "10,25,50").split(",")))
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def run_optimization_experiment(request):
-    try:
-        data = json.loads(request.body)
-        
-        api_url = urljoin(request.build_absolute_uri('/'), '/api/analytics/db-optimization/')
-        response = requests.post(api_url, json=data, timeout=300)
-        
-        if response.status_code == 200:
-            return JsonResponse(response.json())
-        else:
-            return JsonResponse(
-                {'error': f'API returned status {response.status_code}'},
-                status=response.status_code
-            )
-    except Exception as e:
-        return JsonResponse(
-            {'error': str(e)},
-            status=500
+        test_threads = "test_threads" in request.POST
+        test_processes = "test_processes" in request.POST
+
+        optimizer = DatabaseOptimizer(num_queries=num_queries)
+        results = optimizer.run_experiments(
+            num_workers_range=num_workers,
+            batch_sizes=batch_sizes,
+            test_threads=test_threads,
+            test_processes=test_processes
         )
 
+        data = optimizer.find_optimal_config(results)
+
+        context = self.get_context_data(**kwargs)
+        context.update(data)
+
+        return self.render_to_response(context)
