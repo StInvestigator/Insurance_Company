@@ -9,7 +9,7 @@
     
     <div class="card mb-4">
         <div class="card-header">
-            <h5>Параметри експерименту</h5>
+            <h2>Параметри експерименту</h2>
         </div>
         <div class="card-body">
             <form id="optimizationForm">
@@ -122,7 +122,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped" id="resultsTable">
+                    <table class="table table-striped" id="resultsTable" border="1">
                         <thead>
                             <tr>
                                 <th>Потоки/Процеси</th>
@@ -173,7 +173,6 @@ document.getElementById('optimizationForm').addEventListener('submit', async fun
     document.getElementById('runBtn').disabled = true;
     
     try {
-        // Отримуємо CSRF токен
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
