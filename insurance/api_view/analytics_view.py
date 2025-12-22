@@ -176,20 +176,6 @@ class AnalyticsView(viewsets.ViewSet):
         return Response({'data': df.to_dict(orient='records'), 'stats': stats, 'meta': {'rows': len(data)}})
 
     @action(detail=False, methods=['post'], url_path='db-optimization')
-    @swagger_auto_schema(
-        operation_description="Запускає експерименти для пошуку оптимальних параметрів доступу до БД",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'num_queries': openapi.Schema(type=openapi.TYPE_INTEGER, description='Кількість запитів (100-200)', default=150),
-                'num_workers_range': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='Список кількостей потоків/процесів', default=[1, 2, 4, 8, 16]),
-                'batch_sizes': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='Список розмірів пакетів', default=[10, 25, 50, 100]),
-                'test_threads': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Тестувати багатопотоковість', default=True),
-                'test_processes': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Тестувати багатопроцесність', default=False),
-            }
-        ),
-        responses={200: openapi.Response('Результати експериментів')}
-    )
     def db_optimization(self, request):
         try:
             num_queries = int(request.data.get('num_queries', 150))

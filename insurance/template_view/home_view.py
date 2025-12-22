@@ -26,18 +26,16 @@ class HomeView(TemplateView):
         return key, 0
 
     def get_counts(self):
-        try:
-            r = requests.get(f"{API_ROOT}/analytics/counts/", timeout=TIMEOUT, headers=self._auth_headers())
-            if r.status_code == 200 and isinstance(r.json(), dict):
-                data = r.json()
-                return {
-                    'policies_count': int(data.get('policies_count', 0)),
-                    'customers_count': int(data.get('customers_count', 0)),
-                    'claims_count': int(data.get('claims_count', 0)),
-                    'payments_count': int(data.get('payments_count', 0)),
-                }
-        except requests.RequestException:
-            pass
+        r = requests.get(f"{API_ROOT}/analytics/counts/", timeout=TIMEOUT, headers=self._auth_headers())
+        r.raise_for_status()
+        if r.status_code == 200 and isinstance(r.json(), dict):
+            data = r.json()
+            return {
+                'policies_count': int(data.get('policies_count', 0)),
+                'customers_count': int(data.get('customers_count', 0)),
+                'claims_count': int(data.get('claims_count', 0)),
+                'payments_count': int(data.get('payments_count', 0)),
+            }
         return {
             'policies_count': 0,
             'customers_count': 0,
