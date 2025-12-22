@@ -34,7 +34,7 @@ from insurance.template_view import (
 )
 from insurance.template_view.auth_view import RegisterPageView, SiteLoginView, SiteLogoutView
 from insurance.template_view.analytics_view import AnalyticsDashboardV1View, AnalyticsDashboardV2View
-from insurance.template_view.db_optimization_view import DatabaseOptimizationDashboardView
+from insurance.template_view.db_optimization_view import DatabaseOptimizationDashboardView, run_optimization_experiment
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -72,6 +72,7 @@ urlpatterns = [
     path('analytics/dashboard/v1', AnalyticsDashboardV1View.as_view(), name='analytics_dashboard_v1'),
     path('analytics/dashboard/v2', AnalyticsDashboardV2View.as_view(), name='analytics_dashboard_v2'),
     path('analytics/db-optimization/', DatabaseOptimizationDashboardView.as_view(), name='db_optimization_dashboard'),
+    path('analytics/db-optimization/run/', run_optimization_experiment, name='run_db_optimization'),
     path('claims/byCustomer/<int:pk>/', ClaimsByCustomerListView.as_view(), name='claims_by_customer_list'),
 
     # Customers
