@@ -36,19 +36,6 @@ from insurance.template_view.auth_view import RegisterPageView, SiteLoginView, S
 from insurance.template_view.analytics_view import AnalyticsDashboardV1View, AnalyticsDashboardV2View
 from insurance.template_view.db_optimization_view import DatabaseOptimizationDashboardView
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Insurance Company API",
-        default_version='v1',
-        description="🚀 REST API для страхових полісів, клієнтів, оплат і заявок",
-        terms_of_service="https://www.example.com/terms/",
-        contact=openapi.Contact(email="support@insurance.local"),
-        license=openapi.License(name="MIT License"),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny, ],
-)
-
 app_name = 'insurance'
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
@@ -64,11 +51,6 @@ urlpatterns = [
     path('api/register/', RegisterView.as_view(), name='register'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    # Swagger UI
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
-
-    # # Redoc (альтернатива, більш стриманий стиль)
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
 
     path('analytics/dashboard/v1', AnalyticsDashboardV1View.as_view(), name='analytics_dashboard_v1'),
     path('analytics/dashboard/v2', AnalyticsDashboardV2View.as_view(), name='analytics_dashboard_v2'),

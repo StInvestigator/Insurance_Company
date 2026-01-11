@@ -2,6 +2,9 @@ from django.views.generic import TemplateView
 import json
 import requests
 from urllib.parse import urljoin
+import plotly.graph_objects as go
+import plotly.io as pio
+import plotly.express as px
 
 
 class DatabaseOptimizationDashboardView(TemplateView):
@@ -62,15 +65,23 @@ class DatabaseOptimizationDashboardView(TemplateView):
         workers_sorted = sorted([int(w) for w in avg_time_by_workers.keys()])
         times = [avg_time_by_workers[str(w)] for w in workers_sorted]
         
-        time_chart = [{
-            'x': workers_sorted,
-            'y': times,
-            'type': 'scatter',
-            'mode': 'lines+markers',
-            'name': 'Середній час виконання',
-            'line': {'color': 'blue', 'width': 2},
-            'marker': {'size': 8}
-        }]
+        # 1. Line Chart
+        fig_time = go.Figure()
+        fig_time.add_trace(go.Scatter(
+            x=workers_sorted,
+            y=times,
+            mode='lines+markers',
+            name='Середній час виконання',
+            line={'color': 'blue', 'width': 2},
+            marker={'size': 8}
+        ))
+        fig_time.update_layout(
+            title='Залежність часу виконання від кількості потоків/процесів',
+            xaxis={'title': 'Кількість потоків/процесів'},
+            yaxis={'title': 'Час виконання (секунди)'},
+            margin={'t': 40}
+        )
+        time_chart_html = pio.to_html(fig_time, full_html=False, include_plotlyjs=False)
 
         all_results = result_data.get('all_results', [])
         all_results.sort(key=lambda r: (r['num_workers'], r['batch_size'], 1 if r['use_processes'] else 0))
@@ -84,22 +95,36 @@ class DatabaseOptimizationDashboardView(TemplateView):
             if key not in heatmap_data_map or heatmap_data_map[key]['total_time'] > r['total_time']:
                 heatmap_data_map[key] = r
         
-        z = []
+        # 2. Heatmap
+        # Подготавливаем данные для plotly.express
+        heatmap_data = []
         for bs in batch_sizes_set:
-            row = []
             for w in workers_set:
                 key = f"{w}_{bs}"
-                row.append(heatmap_data_map[key]['total_time'] if key in heatmap_data_map else None)
-            z.append(row)
+                val = heatmap_data_map[key]['total_time'] if key in heatmap_data_map else None
+                if val is not None:
+                    heatmap_data.append({
+                        'Workers': str(w),
+                        'Batch Size': str(bs),
+                        'Execution Time': val
+                    })
         
-        heatmap_chart = [{
-            'x': [str(w) for w in workers_set],
-            'y': [str(bs) for bs in batch_sizes_set],
-            'z': z,
-            'type': 'heatmap',
-            'colorscale': 'Viridis',
-            'colorbar': {'title': 'Час (сек)'}
-        }]
+        fig_heatmap = px.density_heatmap(
+            heatmap_data,
+            x='Workers',
+            y='Batch Size',
+            z='Execution Time',
+            histfunc='avg',
+            title='Теплова карта: Час виконання залежно від параметрів',
+            labels={'Execution Time': 'Час (сек)', 'Workers': 'Кількість потоків/процесів', 'Batch Size': 'Розмір пакету'},
+            color_continuous_scale='Viridis',
+            category_orders={
+                'Workers': [str(w) for w in workers_set],
+                'Batch Size': [str(bs) for bs in batch_sizes_set]
+            }
+        )
+        fig_heatmap.update_layout(margin={'t': 40})
+        heatmap_chart_html = pio.to_html(fig_heatmap, full_html=False, include_plotlyjs=False)
 
         cpu_by_workers = {}
         mem_by_workers = {}
@@ -108,25 +133,39 @@ class DatabaseOptimizationDashboardView(TemplateView):
             cpu_by_workers.setdefault(w, []).append(r['cpu_usage_percent'])
             mem_by_workers.setdefault(w, []).append(r['memory_usage_mb'])
         
-        cpu_chart = []
+        # 3. CPU Chart
+        fig_cpu = go.Figure()
         for w in workers_set:
             avg_cpu = sum(cpu_by_workers[w]) / len(cpu_by_workers[w])
-            cpu_chart.append({
-                'x': [str(w)],
-                'y': [avg_cpu],
-                'type': 'bar',
-                'name': f"{w} потоків/процесів"
-            })
+            fig_cpu.add_trace(go.Bar(
+                x=[str(w)],
+                y=[avg_cpu],
+                name=f"{w} потоків/процесів"
+            ))
+        fig_cpu.update_layout(
+            title='Використання CPU',
+            xaxis={'title': 'Кількість потоків/процесів'},
+            yaxis={'title': 'CPU (%)'},
+            margin={'t': 40}
+        )
+        cpu_chart_html = pio.to_html(fig_cpu, full_html=False, include_plotlyjs=False)
 
-        mem_chart = []
+        # 4. Memory Chart
+        fig_mem = go.Figure()
         for w in workers_set:
             avg_mem = sum(mem_by_workers[w]) / len(mem_by_workers[w])
-            mem_chart.append({
-                'x': [str(w)],
-                'y': [avg_mem],
-                'type': 'bar',
-                'name': f"{w} потоків/процесів"
-            })
+            fig_mem.add_trace(go.Bar(
+                x=[str(w)],
+                y=[avg_mem],
+                name=f"{w} потоків/процесів"
+            ))
+        fig_mem.update_layout(
+            title='Використання пам\'яті',
+            xaxis={'title': 'Кількість потоків/процесів'},
+            yaxis={'title': 'Пам\'ять (MB)'},
+            margin={'t': 40}
+        )
+        mem_chart_html = pio.to_html(fig_mem, full_html=False, include_plotlyjs=False)
 
         table_rows = []
         for r in all_results:
@@ -148,10 +187,10 @@ class DatabaseOptimizationDashboardView(TemplateView):
 
         return {
             'optimal_config_html': optimal_config_html,
-            'time_chart': json.dumps(time_chart),
-            'heatmap_chart': json.dumps(heatmap_chart),
-            'cpu_chart': json.dumps(cpu_chart),
-            'mem_chart': json.dumps(mem_chart),
+            'time_chart_html': time_chart_html,
+            'heatmap_chart_html': heatmap_chart_html,
+            'cpu_chart_html': cpu_chart_html,
+            'mem_chart_html': mem_chart_html,
             'table_html': table_html,
         }
 

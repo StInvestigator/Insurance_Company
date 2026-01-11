@@ -84,18 +84,6 @@ class CustomerView(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"error": "Policy not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    @swagger_auto_schema(
-        method='get',
-        manual_parameters=[
-            openapi.Parameter(
-                'tax_number',
-                openapi.IN_QUERY,
-                description="Tax number for customer search",
-                type=openapi.TYPE_STRING,
-                required=True
-            )
-        ]
-    )
     @action(detail=False, methods=['get'])
     def find_by_tax_number(self, request):
         tax_number = request.query_params.get('tax_number')
