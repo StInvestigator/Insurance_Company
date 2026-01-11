@@ -43,18 +43,6 @@ class ClaimView(viewsets.ModelViewSet):
                 'total_pages': total_pages,
             })
 
-    @swagger_auto_schema(
-        method='get',
-        manual_parameters=[
-            openapi.Parameter(
-                'policy_id',
-                openapi.IN_QUERY,
-                description="ID страхової політики для пошуку",
-                type=openapi.TYPE_NUMBER,
-                required=True
-            )
-        ]
-    )
     @action(detail=False, methods=['get'])
     def find_by_policy(self, request):
         policy_id = request.query_params.get('policy_id')

@@ -4,7 +4,8 @@
 {% block title %}Оптимізація доступу до БД{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <div class="container mt-4">
     <h1 class="mb-4">Оптимізація доступу до бази даних</h1>
     
     <div class="card mb-4">
@@ -79,7 +80,7 @@
             <div class="col-md-12">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div id="timeByWorkersChart"></div>
+                        {{ results.time_chart_html|safe }}
                     </div>
                 </div>
             </div>
@@ -89,7 +90,7 @@
             <div class="col-md-12">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div id="heatmapChart"></div>
+                        {{ results.heatmap_chart_html|safe }}
                     </div>
                 </div>
             </div>
@@ -99,14 +100,14 @@
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div id="cpuChart"></div>
+                        {{ results.cpu_chart_html|safe }}
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div id="memoryChart"></div>
+                        {{ results.mem_chart_html|safe }}
                     </div>
                 </div>
             </div>
@@ -142,38 +143,5 @@
     </div>
     {% endif %}
 </div>
-
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script>
-{% if results %}
-    Plotly.newPlot('timeByWorkersChart', {{ results.time_chart|safe }}, {
-        title: 'Залежність часу виконання від кількості потоків/процесів',
-        xaxis: { title: 'Кількість потоків/процесів' },
-        yaxis: { title: 'Час виконання (секунди)' },
-        margin: { t: 40 }
-    });
-
-    Plotly.newPlot('heatmapChart', {{ results.heatmap_chart|safe }}, {
-        title: 'Теплова карта: Час виконання залежно від параметрів',
-        xaxis: { title: 'Кількість потоків/процесів' },
-        yaxis: { title: 'Розмір пакету' },
-        margin: { t: 40 }
-    });
-
-    Plotly.newPlot('cpuChart', {{ results.cpu_chart|safe }}, {
-        title: 'Використання CPU',
-        xaxis: { title: 'Кількість потоків/процесів' },
-        yaxis: { title: 'CPU (%)' },
-        margin: { t: 40 }
-    });
-    
-    Plotly.newPlot('memoryChart', {{ results.mem_chart|safe }}, {
-        title: 'Використання пам\'яті',
-        xaxis: { title: 'Кількість потоків/процесів' },
-        yaxis: { title: 'Пам\'ять (MB)' },
-        margin: { t: 40 }
-    });
-{% endif %}
-</script>
 {% endblock %}
 
